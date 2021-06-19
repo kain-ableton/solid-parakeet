@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 '''
 Name: Microsoft Server Service Remote Path Canonicalization Stack Overflow Vulnerability
 
@@ -36,7 +35,6 @@ Notes:
   services in the process.
 '''
 
-
 import socket
 import sys
 
@@ -67,9 +65,8 @@ except ImportError, _:
     print 'from http://code.google.com/p/pymsrpc/'
     sys.exit(1)
 
-
 CMDLINE = False
-SILENT  = False
+SILENT = False
 
 
 class connectionException(Exception):
@@ -80,10 +77,9 @@ class MS08_067(Thread):
     def __init__(self, target, port=445):
         super(MS08_067, self).__init__()
 
-        self.__port   = port
-        self.target   = target
-        self.status   = 'unknown'
-
+        self.__port = port
+        self.target = target
+        self.status = 'unknown'
 
     def __checkPort(self):
         '''
@@ -102,7 +98,6 @@ class MS08_067(Thread):
         except socket.error, _:
             raise connectionException, 'connection refused'
 
-
     def __connect(self):
         '''
         SMB connect to the Computer Browser service named pipe
@@ -110,7 +105,8 @@ class MS08_067(Thread):
         '''
 
         try:
-            self.__trans = transport.DCERPCTransportFactory('ncacn_np:%s[\\pipe\\browser]' % self.target)
+            self.__trans = transport.DCERPCTransportFactory(
+                'ncacn_np:%s[\\pipe\\browser]' % self.target)
             self.__trans.connect()
 
         except smb.SessionError, _:
@@ -119,7 +115,6 @@ class MS08_067(Thread):
         except:
             #raise Exception, 'unhandled exception (%s)' % format_exc()
             raise connectionException, 'unexpected exception'
-
 
     def __bind(self):
         '''
@@ -130,7 +125,9 @@ class MS08_067(Thread):
         try:
             self.__dce = self.__trans.DCERPC_class(self.__trans)
 
-            self.__dce.bind(uuid.uuidtup_to_bin(('4b324fc8-1670-01d3-1278-5a47bf6ee188', '3.0')))
+            self.__dce.bind(
+                uuid.uuidtup_to_bin(
+                    ('4b324fc8-1670-01d3-1278-5a47bf6ee188', '3.0')))
 
         except socket.error, _:
             raise connectionException, 'unable to bind to SRVSVC endpoint'
@@ -138,7 +135,6 @@ class MS08_067(Thread):
         except:
             #raise Exception, 'unhandled exception (%s)' % format_exc()
             raise connectionException, 'unexpected exception'
-
 
     def __forgePacket(self):
         '''
@@ -157,12 +153,13 @@ class MS08_067(Thread):
 
         self.__path = ''.join([choice(letters) for _ in xrange(0, 3)])
 
-        self.__request  = ndr_unique(pointer_value=0x00020000, data=ndr_wstring(data='')).serialize()
-        self.__request += ndr_wstring(data='\\%s\\..\\%s' % ('A'*5, self.__path)).serialize()
+        self.__request = ndr_unique(pointer_value=0x00020000,
+                                    data=ndr_wstring(data='')).serialize()
+        self.__request += ndr_wstring(data='\\%s\\..\\%s' %
+                                      ('A' * 5, self.__path)).serialize()
         self.__request += ndr_wstring(data='\\%s' % self.__path).serialize()
         self.__request += ndr_long(data=1).serialize()
         self.__request += ndr_long(data=0).serialize()
-
 
     def __compare(self):
         '''
@@ -181,13 +178,11 @@ class MS08_067(Thread):
 
         self.result()
 
-
     def result(self):
         if CMDLINE == True and self.status in ('VULNERABLE', 'not vulnerable'):
-           print '%s: %s' % (self.target, self.status)
+            print '%s: %s' % (self.target, self.status)
         elif CMDLINE == True and SILENT != True:
-           print '%s: %s' % (self.target, self.status)
-
+            print '%s: %s' % (self.target, self.status)
 
     def run(self):
         try:
@@ -210,6 +205,6 @@ class MS08_067(Thread):
 
 if __name__ == '__main__':
     CMDLINE = True
-    target=sys.argv[1]
+    target = sys.argv[1]
     current = MS08_067(target)
     current.start()

