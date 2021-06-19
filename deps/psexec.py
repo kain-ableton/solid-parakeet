@@ -90,10 +90,10 @@ class PSEXEC:
 
     def getOutput(self):
         global totalOutput
-        #totalOutput=''
-        #totalOutput1=totalOutput
-        #totalOutput=None
-        #return totalOutput1
+        # totalOutput=''
+        # totalOutput1=totalOutput
+        # totalOutput=None
+        # return totalOutput1
         return totalOutput
 
     def clearOutput(self):
@@ -148,10 +148,10 @@ class PSEXEC:
             dce.connect()
         except Exception, e:
             #import traceback
-            #traceback.print_exc()
-            #logging.critical(str(e))
-            #1may2017
-            #sys.exit(1)
+            # traceback.print_exc()
+            # logging.critical(str(e))
+            # 1may2017
+            # sys.exit(1)
             pass
 
         global dialect
@@ -170,7 +170,7 @@ class PSEXEC:
                 try:
                     f = open(self.__exeFile)
                 except Exception, e:
-                    #logging.critical(str(e))
+                    # logging.critical(str(e))
                     sys.exit(1)
                 installService = serviceinstall.ServiceInstall(
                     rpctransport.get_smb_connection(), f)
@@ -243,24 +243,24 @@ class PSEXEC:
                 s.deleteFile(installService.getShare(),
                              os.path.basename(self.__copyFile))
             unInstalled = True
-#here
-#sys.exit(retCode['ErrorCode'])
+# here
+# sys.exit(retCode['ErrorCode'])
 
         except SystemExit:
             raise
         except:
             #import traceback
-            #traceback.print_exc()
+            # traceback.print_exc()
             if unInstalled is False:
                 installService.uninstall()
                 if self.__copyFile is not None:
                     s.deleteFile(installService.getShare(),
                                  os.path.basename(self.__copyFile))
-            #here2
+            # here2
 
 
-#sys.stdout.flush()
-#sys.exit(1)
+# sys.stdout.flush()
+# sys.exit(1)
 
 
 class Pipes(Thread):
@@ -312,7 +312,7 @@ class Pipes(Thread):
             self.server.setTimeout(1000000)
         except:
             import traceback
-            #traceback.print_exc()
+            # traceback.print_exc()
             #logging.error("Something wen't wrong connecting the pipes(%s), try again" % self.__class__)
             pass
 
@@ -334,7 +334,7 @@ class RemoteStdOutPipe(Pipes):
                     global LastDataSent
                     if ans != LastDataSent:
                         totalOutput += ans.decode('cp437')
-                        #sys.stdout.write(ans.decode('cp437'))
+                        # sys.stdout.write(ans.decode('cp437'))
                         sys.stdout.flush()
                     else:
                         # Don't echo what I sent, and clear it up
@@ -360,7 +360,7 @@ class RemoteStdErrPipe(Pipes):
                 pass
             else:
                 try:
-                    #sys.stderr.write(str(ans))
+                    # sys.stderr.write(str(ans))
                     sys.stderr.flush()
                 except:
                     pass
@@ -427,7 +427,7 @@ class RemoteShell(cmd.Cmd):
             self.transferClient.getFile(self.share, src_path, fh.write)
             fh.close()
         except Exception, e:
-            #logging.critical(str(e))
+            # logging.critical(str(e))
             pass
 
         self.send_data('\r\n')
@@ -455,7 +455,7 @@ class RemoteShell(cmd.Cmd):
                                         fh.read)
             fh.close()
         except Exception, e:
-            #logging.error(str(e))
+            # logging.error(str(e))
             pass
 
         self.send_data('\r\n')
@@ -507,7 +507,7 @@ class RemoteStdInPipe(Pipes):
 if __name__ == '__main__':
     # Init the example's logger theme
     logger.init()
-    #print version.BANNER
+    # print version.BANNER
 
     parser = argparse.ArgumentParser(
         add_help=True,
@@ -566,15 +566,13 @@ if __name__ == '__main__':
         '-dc-ip',
         action='store',
         metavar="ip address",
-        help=
-        'IP Address of the domain controller. If ommited it use the domain part (FQDN) specified in '
+        help='IP Address of the domain controller. If ommited it use the domain part (FQDN) specified in '
         'the target parameter')
     group.add_argument(
         '-target-ip',
         action='store',
         metavar="ip address",
-        help=
-        'IP Address of the target machine. If ommited it will use whatever was specified as target. '
+        help='IP Address of the target machine. If ommited it will use whatever was specified as target. '
         'This is useful when target is the NetBIOS name and you cannot resolve it'
     )
     group.add_argument('-port',
@@ -590,10 +588,10 @@ if __name__ == '__main__':
 
     options = parser.parse_args()
 
-    #if options.debug is True:
+    # if options.debug is True:
     #    logging.getLogger().setLevel(logging.DEBUG)
-    #else:
-    #logging.getLogger().setLevel(logging.INFO)
+    # else:
+    # logging.getLogger().setLevel(logging.INFO)
 
     import re
 
@@ -601,7 +599,7 @@ if __name__ == '__main__':
         '(?:(?:([^/@:]*)/)?([^@:]*)(?::([^@]*))?@)?(.*)').match(
             options.target).groups('')
 
-    #In case the password contains '@'
+    # In case the password contains '@'
     if '@' in remoteName:
         password = password + '@' + remoteName.rpartition('@')[0]
         remoteName = remoteName.rpartition('@')[2]

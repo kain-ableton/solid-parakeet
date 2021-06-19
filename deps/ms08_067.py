@@ -46,14 +46,14 @@ from struct import pack
 from threading import Thread
 from traceback import format_exc
 
-#try:
+# try:
 from impacket import smb
 from impacket import uuid
 from impacket import dcerpc
 from impacket.dcerpc.v5 import transport
 #from impacket.dcerpc import dcerpc
 #from impacket.dcerpc import transport
-#except ImportError, _:
+# except ImportError, _:
 #    print 'ERROR: this tool requires python-impacket library to be installed, get it '
 #    print 'from http://oss.coresecurity.com/projects/impacket.html or apt-get install python-impacket'
 #    sys.exit(1)
@@ -113,7 +113,7 @@ class MS08_067(Thread):
             raise connectionException, 'access denied (RestrictAnonymous is probably set to 2)'
 
         except:
-            #raise Exception, 'unhandled exception (%s)' % format_exc()
+            # raise Exception, 'unhandled exception (%s)' % format_exc()
             raise connectionException, 'unexpected exception'
 
     def __bind(self):
@@ -133,7 +133,7 @@ class MS08_067(Thread):
             raise connectionException, 'unable to bind to SRVSVC endpoint'
 
         except:
-            #raise Exception, 'unhandled exception (%s)' % format_exc()
+            # raise Exception, 'unhandled exception (%s)' % format_exc()
             raise connectionException, 'unexpected exception'
 
     def __forgePacket(self):
