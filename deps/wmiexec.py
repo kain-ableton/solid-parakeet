@@ -137,7 +137,7 @@ class WMIEXEC:
         except (Exception, KeyboardInterrupt), e:
             global totalOutput
             totalOutput = str(e)
-            #logging.error(str(e))
+            # logging.error(str(e))
             try:
                 if smbConnection is not None:
                     smbConnection.logoff()
@@ -149,7 +149,7 @@ class WMIEXEC:
                 pass
             sys.stdout.flush()
             return str(e)
-            #sys.exit(1)
+            # sys.exit(1)
 
         try:
             if smbConnection is not None:
@@ -247,7 +247,7 @@ class RemoteShell(cmd.Cmd):
     def do_cd(self, s):
         self.execute_remote('cd ' + s)
         if len(self.__outputBuffer.strip('\r\n')) > 0:
-            #print self.__outputBuffer.decode(CODEC)
+            # print self.__outputBuffer.decode(CODEC)
             self.__outputBuffer = ''
         else:
             self.__pwd = ntpath.normpath(
@@ -264,7 +264,7 @@ class RemoteShell(cmd.Cmd):
             self.execute_remote(line)
             if len(self.__outputBuffer.strip('\r\n')) > 0:
                 # Something went wrong
-                #print self.__outputBuffer.decode(CODEC)
+                # print self.__outputBuffer.decode(CODEC)
                 self.__outputBuffer = ''
             else:
                 # Drive valid, now we should get the current path
@@ -300,7 +300,7 @@ class RemoteShell(cmd.Cmd):
                     # The SMB Connection might have timed out, let's try reconnecting
                     logging.debug('Connection broken, trying to recreate it')
                     self.__transferClient.reconnect()
-                    #herezzz
+                    # herezzz
                     return self.get_output()
         self.__transferClient.deleteFile(self.__share, self.__output)
 
@@ -310,7 +310,7 @@ class RemoteShell(cmd.Cmd):
             command += ' 1> ' + '\\\\127.0.0.1\\%s' % self.__share + self.__output + ' 2>&1'
         self.__win32Process.Create(command.decode(sys.stdin.encoding),
                                    self.__pwd, None)
-        #hereyyy
+        # hereyyy
         self.get_output()
 
     def send_data(self, data):
@@ -318,19 +318,20 @@ class RemoteShell(cmd.Cmd):
         try:
             self.execute_remote(data)
             totalOutput = self.__outputBuffer.decode(CODEC)
-            #print self.__outputBuffer.decode(CODEC)
+            # print self.__outputBuffer.decode(CODEC)
         except UnicodeDecodeError, e:
             logging.error(
                 'Decoding error detected, consider running chcp.com at the target,\nmap the result with '
                 'https://docs.python.org/2.4/lib/standard-encodings.html\nand then execute wmiexec.py '
                 'again with -codec and the corresponding codec')
-            #print self.__outputBuffer
+            # print self.__outputBuffer
         self.__outputBuffer = ''
 
 
 class AuthFileSyntaxError(Exception):
     '''raised by load_smbclient_auth_file if it encounters a syntax error
     while loading the smbclient-style authentication file.'''
+
     def __init__(self, path, lineno, reason):
         self.path = path
         self.lineno = lineno
@@ -381,7 +382,7 @@ def load_smbclient_auth_file(path):
 if __name__ == '__main__':
     # Init the example's logger theme
     logger.init()
-    #print version.BANNER
+    # print version.BANNER
 
     parser = argparse.ArgumentParser(
         add_help=True,
@@ -477,7 +478,7 @@ if __name__ == '__main__':
         '(?:(?:([^/@:]*)/)?([^@:]*)(?::([^@]*))?@)?(.*)').match(
             options.target).groups('')
 
-    #In case the password contains '@'
+    # In case the password contains '@'
     if '@' in address:
         password = password + '@' + address.rpartition('@')[0]
         address = address.rpartition('@')[2]
@@ -518,7 +519,7 @@ if __name__ == '__main__':
         executer.run(address)
     except (Exception, KeyboardInterrupt), e:
         #import traceback
-        #print traceback.print_exc()
-        #print "here"
+        # print traceback.print_exc()
+        # print "here"
         logging.error(str(e))
     sys.exit(0)
