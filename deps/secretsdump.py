@@ -57,7 +57,7 @@ from impacket.examples.secretsdump import LocalOperations, RemoteOperations, SAM
 
 
 class DumpSecrets:
-    #def __init__(self, address, username='', password='', domain='', options=None):
+    # def __init__(self, address, username='', password='', domain='', options=None):
     def __init__(self,
                  address,
                  username='',
@@ -122,7 +122,7 @@ class DumpSecrets:
         if self.__hashes is not None:
             self.__lmhash, self.__nthash = self.__hashes.split(':')
 
-        #if options.hashes is not None:
+        # if options.hashes is not None:
         #    self.__lmhash, self.__nthash = options.hashes.split(':')
 
     def connect(self):
@@ -180,7 +180,7 @@ class DumpSecrets:
                 except Exception, e:
                     self.__canProcessSAMLSA = False
                     if str(e).find('STATUS_USER_SESSION_DELETED') and os.getenv('KRB5CCNAME') is not None \
-                        and self.__doKerberos is True:
+                            and self.__doKerberos is True:
                         # Giving some hints here when SPN target name validation is set to something different to Off
                         # This will prevent establishing SMB connections using TGS for SPNs different to cifs/
                         logging.error(
@@ -265,7 +265,7 @@ class DumpSecrets:
             self.cleanup()
         except (Exception, KeyboardInterrupt), e:
             #import traceback
-            #print traceback.print_exc()
+            # print traceback.print_exc()
             logging.error(e)
             if self.__NTDSHashes is not None:
                 if isinstance(e, KeyboardInterrupt):
@@ -341,8 +341,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '-outputfile',
         action='store',
-        help=
-        'base output filename. Extensions will be added for sam, secrets, cached and ntds'
+        help='base output filename. Extensions will be added for sam, secrets, cached and ntds'
     )
     parser.add_argument('-use-vss',
                         action='store_true',
@@ -353,8 +352,7 @@ if __name__ == '__main__':
         '-just-dc-user',
         action='store',
         metavar='USERNAME',
-        help=
-        'Extract only NTDS.DIT data for the user specified. Only available for DRSUAPI approach. '
+        help='Extract only NTDS.DIT data for the user specified. Only available for DRSUAPI approach. '
         'Implies also -just-dc switch')
     group.add_argument(
         '-just-dc',
@@ -369,8 +367,7 @@ if __name__ == '__main__':
         '-pwd-last-set',
         action='store_true',
         default=False,
-        help=
-        'Shows pwdLastSet attribute for each NTDS.DIT account. Doesn\'t apply to -outputfile data'
+        help='Shows pwdLastSet attribute for each NTDS.DIT account. Doesn\'t apply to -outputfile data'
     )
     group.add_argument('-user-status',
                        action='store_true',
@@ -424,7 +421,7 @@ if __name__ == '__main__':
         '(?:(?:([^/@:]*)/)?([^@:]*)(?::([^@]*))?@)?(.*)').match(
             options.target).groups('')
 
-    #In case the password contains '@'
+    # In case the password contains '@'
     if '@' in address:
         password = password + '@' + address.rpartition('@')[0]
         address = address.rpartition('@')[2]

