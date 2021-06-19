@@ -364,6 +364,7 @@ class RemoteShell(cmd.Cmd):
         self.TGS = TGS
         self.intro = ''
 
+
 #[!] Press help for extra shell commands'
 #def postloop(self):
 #	return
